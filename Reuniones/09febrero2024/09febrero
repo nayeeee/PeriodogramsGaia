@@ -1,0 +1,22 @@
+- Cuando el periodo en pf es null se puede sacar de la columna p1_o.
+Para ello se podría sacar la precondicion para que pf no sea null del dataset, entonces se verifica si pf es null entonces sacamos el periodo de p1_o
+- Con respecto a:
+    "Tambien hicimos rutinas para sacar la grilla de frecuencias, ahi hicimos dos opciones, la primera es sacando el minimo y maximo de frecuencia segun las frecuencias de catálogo del dataset creado y la otra opcion es sacando el minimo y maximo de frecuencia con una consulta directamente desde las tablas de Gaia (esta ultima creimos que era buena opcion porque tenia mas curvas y podria ser mas representativo). OBS: por cada tipo de curva. ¿que opción le parece mejor?"
+Al profe le pareció mejor la opción de sacar el min y max de frecuencia desde las tablas de Gaia, con consulta. Es mas representativo que sesgarlo al dataset
+- Ocupar el espaciado de la grilla con 1e-4, después se podría probar cual resulta mejor siendo mas o menos de ese valor
+- Definimos valores por defecto M = 18 N = 100 L = 10
+- Error de periodogramas: ocurre porque la columna time es null para una banda entera, entonces evaluando mask = data["rejected_by_variability"]=="false"
+nos queda una mascara vacia. Solucion: evaluarlo por bandas, cuando creamos el dataset, que las mascaras por banda no sean vacias
+- El profe propuso paralelizar el código:
+para hacer cómputo paralelo (no distribuido) en python (mejor que multiprocessing): https://joblib.readthedocs.io/en/stable/
+para hacer cómputo distribuido en python: https://docs.ray.io/en/latest/ray-core/walkthrough.html
+Ejemplos de joblib y ray: https://github.com/magister-informatica-uach/hpc-tools-course/tree/main/activities/week7
+*ray es mejor*
+
+DESARROLLO:
+- Preguntar si sacamos la validacion de pf null
+- Aplicado
+- Aplicado
+- Aplicado
+- Validacion agregada al dataset y ya no da error al hacer los periodoramas
+- 

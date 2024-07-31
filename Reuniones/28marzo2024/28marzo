@@ -1,0 +1,23 @@
+Avance dorner
+- el profe dijo que paralelizar el dataset no era muy conveniente porque el servidor no iba a estar 
+muy feliz de recibir peticiones simultaneas
+- es preferible paralelizar el calculo de los periodogramas que es lo que mas se demora
+- lo de la rutina de las matrices (analysis) no es necesario paralelizarlo porque demora poco (2seg
+para 4 matrices por cada curva y son 200 curva, en total hace 800 matrices en 2 segundos)
+Avance naye
+- lo de las matrices funciona super bien
+- cambiar para que acepte solo una tolerancia True, la que tenga menor error porque no sirve tener 2 
+aceptadas por la tolerancia porque si una tiene error asi 0 la otra no es útil. De esa forma cada matriz 
+tendrá una o ninguna como la mejor frecuencia (listo)
+- de momento dejarlo con esa tolerancia (1e-2) y esos multiplos (7), despues se puede ajustar más,
+pero más adelante
+- hacer analisis por cada tipo de curva (ECL y RR) y banda:
+  - hago un conteo, cuantas el tol=True (candidato) esta en la primera posición
+  - cuantas no tienen ningun buen candidato
+  - cuantas el candidato coincide en otra posicion (2,3,5,...)
+  - ver si vale la pena el multibanda, que si el mejor candidato sube en el ranking en el multiband 
+  en comparación a las otras bandas
+Aspiraciones a futuro
+- Ver si existe alguna relacion con el número de puntos con que este el mejor candidato en el ranking 1,
+u otro parámetro como el error, debería ser a más ruidosa evalúa peor el candidato y viceversa
+

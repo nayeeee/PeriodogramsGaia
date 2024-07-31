@@ -1,0 +1,19 @@
+- Guardar periodogramas en pkl pero no como imagen XDD
+    * Guardar un pkl por cada banda y el multibanda que contenga solo los per
+    * Las frecuencias (freq) se guardaran en un unico pkl por tipo de lc
+- Hacer rutina que saque el top 10, con agumentos de tolerancia y tipo de banda (de momento)
+    DUDAS:
+    * La tolerancia seria algo asi?? freq_real-(tol/2) < freq
+    < freq_real+(tol/2)
+    * si es asi entonces voy descartando del top y reemplazando por otro??
+- Evaluar que tan bien coicide el periodo de catalogo con estos peak (ver cuadernillo query_gaia_tables.ipynb)
+    * entender como funciona la relacion
+- Paralelizar
+    * pendiente con dorner
+- Resumen por cada tipo de curva de luz y como coincide
+    * que debe tener el resumen (detalle)
+    * es por cada tipo o por curva
+
+
+
+matriz peaks - ranking (en cada casilla poner error)

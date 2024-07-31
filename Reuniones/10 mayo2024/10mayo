@@ -1,0 +1,25 @@
+El profe no vino 
+Asuntos pendientes:
+- la tablas de ECL y RR solo sacan 2000
+- Calculamos con el máximo 2k y salieron 1992 para ECL y 850 para RR (los resultados fueron parecidos a
+cuando eran 100 c/u)
+
+Hola profe @ , entre los avances me surgió una duda, es que supone que habiamos acordado que usariamos 200 mil curvas para eclipses binarias y rrlyrae porque en el Gaia Data Release 3 las rrlyrae tienen 271,779 y las ecl tienen 2,184,477 (lo cual lo confirmé aqui https://www.cosmos.esa.int/web/gaia/dr3), pero cuando hago la consulta para sus respectivas tablas, solo me aparecen 2000 para cada una, la consulta la hago asi: ```query = """
+select *  
+from gaiadr3.vari_rrlyrae
+"""
+
+job = Gaia.launch_job(query)
+curvas = job.get_results().to_pandas()
+len(curvas) ```
+Entonces quería saber de qué forma se podrían sacar todas, pensaba que quizas la consulta tiene un máximo de resultados o si todos los objetos se encuentran en otra tabla.
+En cuanto a los resultados, se probó la rutina para estos 2000 de cada una. La rutina para el dataset se modificó para que no diera error, porque antes entraba en un while hasta que completara las N curvas que se le pedía, ahora solo se pide el máximo 2000 y no busca más porque no las hay. Descartando curvas de acuerdo a los parámetros:
+- periodo de catálogo no nulo
+- al menos L puntos en cada banda
+- magnitud promedio en banda g menor a M.
+quedaron 1992 curvas para las ECL y 850 para las rrlyrae, y los resultados son los de las imágenes.
+Con respecto a la paralelización de los periodogramas con ray que hizo @derner se logró reducir el tiempo, se probó con 50 curvas para cada una y pasó de demorar 13 min a 3 min. Aún asi para las casi 2800 curvas con las que se probó ahora demoró 268 min, ¿lo seguimos reduciendo o lo dejamos así?, porque si lo llegaramos a probar com 200 mil demoraría harto más en mi pc al menos o ¿habría que ocupar el patagon?
+
+A esto el profe respondió:
+- Que existe un máximo de curvas de luz que puede recuperar una query. Entonces habría que hacer muchas querys.
+- Hacer curva de speed up (tiempo multicore v/s tiempo single core) para 10, 100 y 1000 curvas. Para ver que tan eficiente es la paralelización.

@@ -1,0 +1,12 @@
+No tuvimos reunión, pero se mostraron los avances por discord:
+- En primer se ajustó para que cada matriz (por banda y multibanda (4)) acepte solo una tolerancia igual 
+a True
+- En segundo lugar se hizo un análisis por cada tipo de curva rrlyrae y ECL, consistió en una matriz por
+cada banda y multibanda, por cada tipo de curva, donde en las columnas estaban los múltiplos en los 
+que se probó el periodograma, mientras que las filas fueron los ranking (10), de esta forma en cada 
+posición de la matriz se hacia un conteo de cuantas curvas coincidian (tol=True) en esa posición 
+(ranking, múltiplo)
+- Ver imagenes en el discord de ARGOS>gaia>varios
+El profe dijo lo siguiente:
+- No sacar conclusiones aún y calcular con más curvas, como la ecl tiene 2M y las rrlyrae tiene 200k,
+probar con 200k para cada una (máximo de la que tenga menos)

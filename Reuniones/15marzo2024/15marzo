@@ -1,0 +1,30 @@
+- La rutina que guarda los periodogramas estaba perfecto donde cada key del diccionario guardado en el pickle es una banda y el multibanda.
+- La rutina del top, banda y tol esta bien
+    No descartar por tolerancia pero si poner si la respeta o no en cada lugar del ranking
+- Analisis
+    Ver que relacion hay para cada uno de los peaks con el periodo objetivo (real 1/2 2 ...)
+    Ver si cumplen con la tolerancia con cada uno de los periodos objetivo
+    - Hacer matriz de peak v/s periodo objetivo, en total serian 4 matrices por cada curva y guardarlas, en cada celda aparecera el error y comparar tambien con la tolerancia
+
+                multiple 1.  multiple  2. multiple 3. multiple 0.5 multiple 0.33333333    
+frequency rank 1 [error,tol]
+frequency rank 2
+frequency rank 3
+frequency rank 4
+frequency rank 5
+frequency rank 6
+frequency rank 7
+frequency rank 8
+frequency rank 9
+frequency rank 10
+
+
+dict_matrix = {
+    'multiples': []
+    'BP': [freq_ranking, matrix]
+    'G': [freq_ranking, matrix]
+    'RP': [freq_ranking, matrix]
+    'multiband': [freq_ranking, matrix]
+}
+
+

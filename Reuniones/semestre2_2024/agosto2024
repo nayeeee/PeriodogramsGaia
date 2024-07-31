@@ -1,0 +1,17 @@
+Retomando avances...
+PENDIENTES:
+Arreglar lo de los gráficos single core v/s multicore:
+- Correr rutina que genera el dataset para 1000 curvas
+- Correr rutina para generar periodogramas con single core 
+- Correr rutina para generar periodogramas con 4 core 
+- Poner la CPU en el gráfico LISTO
+Para el dataset:
+- Investigar que es lo de "query de a batches" (creo que es hacer muchas querys)
+- Arreglar la rutina de dataset para acceder a todos los elementos de las ecl y rr lyrae
+- Correr la rutina de grilla
+- Correr rutina de periodogramas
+- Correr rutina que genera matrices de análisis 
+- Correr rutina de analisis de tipo de curva por banda (cuantas coinciden en cada posición [freq ranking, multiplo])
+Bonus:
+- Optimizar codigo haciendo profiling
+- ¿Como ver cual es el numero más optimo de cores?

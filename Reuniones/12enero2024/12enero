@@ -1,0 +1,13 @@
+Para ver la grilla:
+    El limite inferior no puede ser frecuencia igual a 0 porque seria para una serie de tiempo que tienda al infinito, 
+    es decir que la oscilación nunca termina,
+    es por ello que el profe dijo que vea los limites inferior y superior del periodo de catálogo de cada tipo de estrella
+Leer capitulos del 5 en adelante:
+    Poner foco en el 7
+Conclusiones de resolucion de dudas paper (...):
+    El Lomb-Scargle Power es que tan bien se adapta la curva de luz (puntos mag vs tiempo(mjd)) al periodo,
+    En Lomb-Scargle se evalua una serie de periodos candidatos de acuerdo a los limites de la grilla
+    Si la ventana de observación es irregular entonces habrá más peak falsos (peaks altos),
+    de lo contrario si la ventana de observación es más densa los peak falsos que se forman serán menos relevantes
+    En la figura 24 del paper es un punto por cada lc, donde se evalua el periodo obtenido del peak y el de catálogo,
+    se espera que exista relación entre lc del mismo tipo.
