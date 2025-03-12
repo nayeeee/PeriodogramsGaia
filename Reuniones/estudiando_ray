@@ -1,0 +1,13 @@
+26 septiembre 2024
+
+Para configurar ray: 
+https://docs.ray.io/en/latest/ray-core/configure.html
+
+ERROR
+Con ray.cluster_resources() imprimí los recursos disponibles, para lo cual resultó:
+- {'memory': 7486618831.0, 'node:127.0.0.1': 2.0, 'CPU': 24.0, 'object_store_memory': 3743309413.0}
+Pero mi procesador Intel® Core™ i7-1260P tiene 12 núcleos y 16 hilos (https://www.intel.la/content/www/xl/es/products/sku/226254/intel-core-i71260p-processor-18m-cache-up-to-4-70-ghz/specifications.html)
+     4 núcleos de alto rendimiento y 8 núcleos de eficiencia
+SOLUCIÓN -> setearlo yo misma con ray.init(resources={'CPU': 16}) -> CPU es n° de hilos.
+
+En  ray start --head --num-cpus=<NUM_CPUS> -> NUM_CPUS es n° de cpus no de hilos
