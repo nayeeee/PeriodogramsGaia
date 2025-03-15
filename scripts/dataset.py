@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 # main function
 if __name__ == "__main__":
     Gaia.login(user='cnavarro', password='Nayeli20*')
-    # ["vari_eclipsing_binary" , "vari_rrlyrae" 271.779]
+    # ["vari_eclipsing_binary" 2.184.477, "vari_rrlyrae" 271.779]
     for table in ["vari_eclipsing_binary"]: 
         query = f"SELECT * FROM gaiadr3.{table}"
         job = Gaia.launch_job_async(query, dump_to_file=True)
