@@ -6,15 +6,6 @@
 # * average magnitude in band G < M
 # * 
 
-# from astropy.table import Table
-
-# ruta_archivo = r"C:\Users\nayel\OneDrive\Documentos\PeriodogramsGaia\vari_rrlyrae-result.vot.gz"
-# tabla = Table.read(ruta_archivo, format="votable")
-# print(tabla.columns)
-
-# TableColumns names=('solution_id','SOURCE_ID','pf','pf_error','p1_o','p1_o_error','epoch_g','epoch_g_error','epoch_bp','epoch_bp_error','epoch_rp','epoch_rp_error','epoch_rv','epoch_rv_error','int_average_g','int_average_g_error','int_average_bp','int_average_bp_error','int_average_rp','int_average_rp_error','average_rv','average_rv_error','peak_to_peak_g','peak_to_peak_g_error','peak_to_peak_bp','peak_to_peak_bp_error','peak_to_peak_rp','peak_to_peak_rp_error','peak_to_peak_rv','peak_to_peak_rv_error','metallicity','metallicity_error','r21_g','r21_g_error','r31_g','r31_g_error','phi21_g','phi21_g_error','phi31_g','phi31_g_error','num_clean_epochs_g','num_clean_epochs_bp','num_clean_epochs_rp','num_clean_epochs_rv','zp_mag_g','zp_mag_bp','zp_mag_rp','num_harmonics_for_p1_g','num_harmonics_for_p1_bp','num_harmonics_for_p1_rp','num_harmonics_for_p1_rv','reference_time_g','reference_time_bp','reference_time_rp','reference_time_rv','fund_freq1','fund_freq1_error','fund_freq2','fund_freq2_error','fund_freq1_harmonic_ampl_g','fund_freq1_harmonic_ampl_g_error','fund_freq1_harmonic_phase_g','fund_freq1_harmonic_phase_g_error','fund_freq1_harmonic_ampl_bp','fund_freq1_harmonic_ampl_bp_error','fund_freq1_harmonic_phase_bp','fund_freq1_harmonic_phase_bp_error','fund_freq1_harmonic_ampl_rp','fund_freq1_harmonic_ampl_rp_error','fund_freq1_harmonic_phase_rp','fund_freq1_harmonic_phase_rp_error','fund_freq1_harmonic_ampl_rv','fund_freq1_harmonic_ampl_rv_error','fund_freq1_harmonic_phase_rv','fund_freq1_harmonic_phase_rv_error','best_classification','g_absorption','g_absorption_error')
-
-
 import pandas as pd
 import os
 from tqdm import tqdm
@@ -32,10 +23,7 @@ def chunks(lst, n):
         yield lst[i:i + n]
         
 def verification_lc(lc, path, type_star, L, M):
-    # Ver que la mascara no de vacia para time, flux y flux_err
-    # print("lc columns", lc.columns)
-    # print("LCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", lc.iloc[0])
-    # print(0/0)
+    # see if the mask is not empty for time, flux and flux_err for any band
     mask_g = lc["variability_flag_g_reject"]=="false"
     mask_bp = lc["variability_flag_bp_reject"]=="false"
     mask_rp = lc["variability_flag_rp_reject"]=="false"
@@ -45,7 +33,6 @@ def verification_lc(lc, path, type_star, L, M):
     
     lc_1 = lc.loc[mask]
 
-    bands = ['G', 'BP', 'RP']
     common_columns = ['solution_id', 'source_id', 'transit_id', 'g_transit_time']
     columns_g  = ['g_transit_flux', 'g_transit_flux_error', 'g_transit_flux_over_error', 'g_transit_mag', 'variability_flag_g_reject', 'g_other_flags']
     columns_bp = ['bp_obs_time', 'bp_flux', 'bp_flux_error', 'bp_flux_over_error', 'bp_mag', 'variability_flag_bp_reject', 'bp_other_flags']
@@ -86,6 +73,22 @@ def create_folder_dataset():
             print(f"folder {path} created")
     return 
 
+def initialize_csv_files():
+    # Create CSV for valid light curves
+    parent_dir = "dataset"
+    valid_csv = os.path.join(parent_dir, "valid_lightcurves.csv")
+    if not os.path.exists(valid_csv):
+        with open(valid_csv, 'w') as f:
+            f.write("source_id,pf,type\n")
+    
+    # Create CSV for invalid light curves
+    invalid_csv = os.path.join(parent_dir, "invalid_lightcurves.csv")
+    if not os.path.exists(invalid_csv):
+        with open(invalid_csv, 'w') as f:
+            f.write("source_id,type\n")
+    
+    return valid_csv, invalid_csv
+
 if __name__ == "__main__":
     
     CHUNK_SIZE = 4900
@@ -95,71 +98,81 @@ if __name__ == "__main__":
     
     print(f"Creating dataset folder...")
     create_folder_dataset()
+    
+    # Initialize CSV files
+    valid_csv, invalid_csv = initialize_csv_files()
+    
     # reads csv files with the results of the query
     # ["vari_eclipsing_binary", "vari_rrlyrae"]
-    for table in ["vari_eclipsing_binary", "vari_rrlyrae"]:
-        valid_lc = []
-        not_valid_lc = []
+    for table in ["vari_rrlyrae"]:
+        valid_lc = 0
+        not_valid_lc = 0
+        # load results
         print(f"Loading results in {table}.csv...")
         path_results = os.path.join(f"{table}.csv")
         results = pd.read_csv(path_results)
         print(f"Results loaded in {table}.csv")
-        ids = results["source_id"].tolist() 
+        # extract source_id
+        ids = results["source_id"].tolist()  
         
         # extract per chunk of 4900 (https://www-cosmos-esa-int.translate.goog/web/gaia-users/archive/datalink-products?_x_tr_sl=en&_x_tr_tl=es&_x_tr_hl=es&_x_tr_pto=tc#datalink_jntb_get_above_lim)
         print(f"Chunks: {math.ceil(len(ids) / CHUNK_SIZE)} with CHUNK_SIZE = {CHUNK_SIZE}")
-        ids_chunks = list(chunks(ids, CHUNK_SIZE))
-        datalink_all = []
+        ids_chunks = list(chunks(ids, CHUNK_SIZE)) ##  cut the list in the chunk end (list of lists with ids per chunk)
         
         print(f"Extracting light curves from Gaia DR3...")
         # extract light curves from Gaia DR3
-        for i, chunk in enumerate(ids_chunks):
+        for i, chunk in tqdm(enumerate(ids_chunks), total=len(ids_chunks), desc=f"Processing {table} chunks"):
+            # list to accumulate results of the chunk
+            valid_results = []
+            invalid_results = []
+            
+            # extract light curves from Gaia DR3
             datalink = Gaia.load_data(ids=chunk, 
                             data_release='Gaia DR3', 
                             retrieval_type='EPOCH_PHOTOMETRY', 
                             format='csv')
-            datalink_all.append(datalink)
-        print(f"Light curves extracted from Gaia DR3")
-        # merge chunks into one single object (python dictionary)
-        print(f"Merging light curves...")
-        datalink_out = datalink_all[0]
-        for inp_dict in datalink_all[1:]:
-            datalink_out.update(inp_dict)
-        keys = list(datalink_out.keys())
-        print(f'* The merged dictionary contains {len(keys)} elements of table {table}') 
-        print(f"Filtering light curves...")
-        for _, (key, value) in enumerate(datalink_out.items()):
-            lc = value[0].to_pandas()
-            is_valid, name = verification_lc(lc, "dataset", table[5:], L, M)
-            if is_valid:
-                valid_lc.append(name)
-        print(f"Light curves filtered")
-        print(f"total light curves filtered in {table}: {len(valid_lc)} / {len(ids)}")
-        print(f"{(len(ids)-len(valid_lc))*100/len(ids)}% of the light curves were deleted with filters:\n - L points in each band \n - average magnitude in band G < M")
+            
+            print(f"Light curves extracted from Gaia DR3 from the chunk {i}")
+            print(f"Filtering light curves from the chunk {i}...")
+            # filter light curves
+            for _, (key, value) in enumerate(datalink.items()):
+                lc = value[0].to_pandas()
+                is_valid, name = verification_lc(lc, "dataset", table[5:], L, M)
+                
+                # Get original light curve information
+                source_info = results[results['source_id'] == name].iloc[0]
+                
+                if is_valid:
+                    # Calculate pf according to the type of star
+                    pf = 1/source_info['frequency'] if table == "vari_eclipsing_binary" else source_info['pf']
+                    valid_results.append(f"{name},{pf},{table[5:]}\n")
+                    print(f"Light curve {name} from chunk {i} is VALID")
+                    valid_lc += 1
+                else:
+                    # Write in the invalid CSV
+                    invalid_results.append(f"{name},{table[5:]}\n")
+                    print(f"Light curve {name} from chunk {i} is NOT valid")
+                    not_valid_lc += 1
+                    
+            # Write all results of the chunk at once
+            if valid_results:
+                with open(valid_csv, 'a') as f:
+                    f.write('\n'.join(valid_results) + '\n')
+            
+            if invalid_results:
+                with open(invalid_csv, 'a') as f:
+                    f.write('\n'.join(invalid_results) + '\n')
+            print(f"All light curves filtered from the chunk {i}")
+            
+        print(f"total light curves filtered in {table}: {valid_lc} / {len(ids)}")
+        print(f"{(len(ids)-valid_lc)*100/len(ids)}% of the light curves were deleted with filters:\n - L points in each band \n - average magnitude in band G < M")
 
-        # add ids, pf and type of star to data_global
-        print("Creating data_global: dataFrame with pf, type of star and source_id")
-        
-        # add a column with period pf in vari_eclipsing_binary
-        if table == "vari_eclipsing_binary":
-            results["pf"] = 1/results["frequency"]
-        
-        # add a column with the type of star in results
-        results["type"] = table[5:]
-        
-        # select in results the rows where source_id is in valid_lc
-        results = results[results["source_id"].isin(valid_lc)]
-        
-        # select the columns source_id, pf and type
-        columns = ["source_id", "pf", "type"]
-        results_filtered = results[columns]
-        
-        data_global = pd.concat([data_global, results_filtered])
-
-    # save data_global
-    path_data_global = os.path.join("dataset", "data_global.csv")
-    data_global.to_csv(path_data_global, index=False)
-
+# OUTPUT:
+# Processing vari_rrlyrae chunks: 100%|████████████████████████████████████████████████████████████████████████████Processing vari_rrlyrae chunks: 100%|███████████████████████████████████████████████████████████████████████████████████████████| 37/37 [2:35:00<00:00, 251.37s/it]
+# total light curves filtered in vari_rrlyrae: 81515 / 177357
+# 54.03902862587888% of the light curves were deleted with filters:
+#  - L points in each band
+#  - average magnitude in band G < M
 
 
 
