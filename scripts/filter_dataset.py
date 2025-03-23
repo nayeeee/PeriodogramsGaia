@@ -104,7 +104,7 @@ if __name__ == "__main__":
     
     # reads csv files with the results of the query
     # ["vari_eclipsing_binary", "vari_rrlyrae"]
-    for table in ["vari_rrlyrae"]:
+    for table in ["vari_eclipsing_binary"]:
         valid_lc = 0
         not_valid_lc = 0
         # load results
@@ -157,11 +157,11 @@ if __name__ == "__main__":
             # Write all results of the chunk at once
             if valid_results:
                 with open(valid_csv, 'a') as f:
-                    f.write('\n'.join(valid_results) + '\n')
+                    f.write(valid_results)
             
             if invalid_results:
                 with open(invalid_csv, 'a') as f:
-                    f.write('\n'.join(invalid_results) + '\n')
+                    f.write(invalid_results)
             print(f"All light curves filtered from the chunk {i}")
             
         print(f"total light curves filtered in {table}: {valid_lc} / {len(ids)}")
@@ -173,7 +173,13 @@ if __name__ == "__main__":
 # 54.03902862587888% of the light curves were deleted with filters:
 #  - L points in each band
 #  - average magnitude in band G < M
-
+# -------------------------------------------
+# All light curves filtered from the chunk 445
+# total light curves filtered in vari_eclipsing_binary: 945705 / 2184477
+# 56.70794428140008% of the light curves were deleted with filters:
+#  - L points in each band
+#  - average magnitude in band G < M
+# Processing vari_eclipsing_binary chunks: 100%|██████████| 446/446 [11:48:19<00:00, 95.29s/it]
 
 
 
