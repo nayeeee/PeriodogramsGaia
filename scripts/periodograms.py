@@ -9,7 +9,7 @@ from functools import partial
 
 sys.path.append("..")
 
-@ray.remote(num_cpus=64)
+@ray.remote(num_cpus=4)
 def periodograms_band(freq, d_folder_type, folder_lc, valid_lightcurves):
     # path of the light curve
     d_folder_lc = os.path.join(d_folder_type, folder_lc)
@@ -50,17 +50,24 @@ def periodograms_band(freq, d_folder_type, folder_lc, valid_lightcurves):
     
 
 if __name__ == "__main__":
+    print("Loading valid light curves")
     # read the valid light curves
     valid_lightcurves = pd.read_csv(os.path.join("dataset", "valid_lightcurves.csv"))
-    ray.init(num_cpus=64)
+    print("Valid light curves loaded")
+
+    print("Initializing Ray")
+    ray.init(num_cpus=4)
+    print("Ray initialized")
 
     for folder in ["eclipsing_binary", "rrlyrae"]:
         # define name of folder specific of the type light curve
         d_folder_type = os.path.join("dataset", folder)
+        print(f"Get values of the grid for {folder}")
         # get values of the grid
         grid = pd.read_csv(os.path.join("dataset", "grid.csv"))
         min_freq = grid[grid["type"] == folder]["low-frequency"].values[0]
         max_freq = grid[grid["type"] == folder]["high-frequency"].values[0]
+
         # define range of frequencies to calculate the periodogram
         print(f"calculating range of frequencies for {folder} from {min_freq} to {max_freq} with step 1e-4")
         freq = np.arange(min_freq, 2*max_freq, 1e-4)
@@ -70,9 +77,9 @@ if __name__ == "__main__":
 
         print(f"calculating periodograms of {folder}")
         # calculate periodograms
-        results = ray.get([periodograms_band.remote(freq, d_folder_type, folder_lc) for folder_lc in os.listdir(d_folder_type)])
-        
-        profile = partial(timeit, global=globals(), number=1)
+        results = ray.get([periodograms_band.remote(freq, d_folder_type, folder_lc, valid_lightcurves) for folder_lc in os.listdir(d_folder_type)])
+        print(f"profile of the calculation of periodograms of {folder}")
+        profile = partial(timeit, globals=globals(), number=1)
         time_to_calculate = profile("ray.get([periodograms_band.remote(freq, d_folder_type, folder_lc, valid_lightcurves) for folder_lc in os.listdir(d_folder_type)])")
         
         print(f"Saving periodograms of {folder}")
