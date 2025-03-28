@@ -1,0 +1,22 @@
+- Para que no se descarten lc en rrlyrae (por pf null) hay que consultar a la columna p1_o si es que pf es null
+    - Pero priorizar pf sobre p1_o
+- Conservar L = 10 y M = 18 por ahora, después se podría subir M = 19
+
+- Como dato la banda G incluye a la banda BP y RP https://www.cosmos.esa.int/web/gaia/dr3-passbands
+    - Se podrian ver casos en los que la banda BP o RP son mejores que la banda G
+
+- Cambiar el calculo de los periodogramas por las siguientes columnas:
+    - mag = {band}_mag donde {band} es g_transit, bp o rp
+    - mag_err = 2.5/(np.log(10)*{band}_flux_over_error) donde {band} es g_transit, bp o rp
+
+- Incluir los alias a los múltiplos de la matriz de rankings del periodograma
+    - Leer paper para entender lo de los alias https://arxiv.org/pdf/1703.09824
+
+- Ver si guardar los periodogramas consume mucha memoria
+    - Como opción se puede guardar los 10 máximos locales por ejemplo
+
+- Correr los periodogramas solo en CPU, porque lombscargle de astropy es para CPU
+
+PENDIENTES:
+
+
