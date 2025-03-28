@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 if __name__ == "__main__":
         # [("vari_eclipsing_binary", "frequency", 2184477), ("vari_rrlyrae", "pf", 271779)]
         for table, period_or_frequency, number_of_lc in [("vari_rrlyrae", "pf", 271779)]: 
-                Gaia.login(user='cnavarro', password='Nayeli20*')
+                Gaia.login(user='cnavarro', password='')
                 query = f"""
                         SELECT * 
                         FROM gaiadr3.{table}
