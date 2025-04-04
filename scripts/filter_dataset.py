@@ -104,12 +104,12 @@ if __name__ == "__main__":
     
     # reads csv files with the results of the query
     # ["vari_eclipsing_binary", "vari_rrlyrae"]
-    for table in ["vari_eclipsing_binary"]:
+    for table in ["vari_rrlyrae"]:
         valid_lc = 0
         not_valid_lc = 0
         # load results
         print(f"Loading results in {table}.csv...")
-        path_results = os.path.join(f"{table}.csv")
+        path_results = os.path.join(f"dataset/{table}.csv")
         results = pd.read_csv(path_results)
         print(f"Results loaded in {table}.csv")
         # extract source_id
@@ -144,7 +144,14 @@ if __name__ == "__main__":
                 
                 if is_valid:
                     # Calculate pf according to the type of star
-                    pf = 1/source_info['frequency'] if table == "vari_eclipsing_binary" else source_info['pf']
+                    if table == "vari_eclipsing_binary":
+                        pf = 1/source_info['frequency']
+                    else:
+                        if pd.notnull(source_info['pf']):
+                            pf = source_info['pf']
+                        else:
+                            pf = source_info['p1_o']
+                        
                     valid_results.append(f"{name},{pf},{table[5:]}\n")
                     print(f"Light curve {name} from chunk {i} is VALID")
                     valid_lc += 1
@@ -157,11 +164,11 @@ if __name__ == "__main__":
             # Write all results of the chunk at once
             if valid_results:
                 with open(valid_csv, 'a') as f:
-                    f.write(valid_results)
+                    f.writelines(valid_results)
             
             if invalid_results:
                 with open(invalid_csv, 'a') as f:
-                    f.write(invalid_results)
+                    f.writelines(invalid_results)
             print(f"All light curves filtered from the chunk {i}")
             
         print(f"total light curves filtered in {table}: {valid_lc} / {len(ids)}")
@@ -181,7 +188,20 @@ if __name__ == "__main__":
 #  - average magnitude in band G < M
 # Processing vari_eclipsing_binary chunks: 100%|██████████| 446/446 [11:48:19<00:00, 95.29s/it]
 
-
+# OFICIAL OUTPUT:
+# Processing vari_rrlyrae chunks: 100%|██████████| 56/56 [1:27:33<00:00, 93.82s/it]
+# All light curves filtered from the chunk 55
+# total light curves filtered in vari_rrlyrae: 117292 / 271779
+# 56.84287601323134% of the light curves were deleted with filters:
+#  - L points in each band
+#  - average magnitude in band G < M
+# -------------------------------------------
+# All light curves filtered from the chunk 445
+# total light curves filtered in vari_eclipsing_binary: 945705 / 2184477
+# 56.70794428140008% of the light curves were deleted with filters:
+#  - L points in each band
+#  - average magnitude in band G < M
+# Processing vari_eclipsing_binary chunks: 100%|██████████| 446/446 [12:10:51<00:00, 98.32s/it]
 
 
 
