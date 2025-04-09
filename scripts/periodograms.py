@@ -27,8 +27,8 @@ def filter_flux_over_error(flux_over_error, time, mag):
             mag_filtered.append(mag[i])
     return np.array(err), np.array(time_filtered), np.array(mag_filtered)
 
-@ray.remote(num_cpus=32)
-def periodograms_band(freq, d_folder_type, folder_lc, dict_per, without_points, lc_with_problems):
+@ray.remote(num_cpus=64)
+def periodograms_band(freq, d_folder_type, folder_lc, without_points, lc_with_problems):
     # path of the light curve
     d_folder_lc = os.path.join(d_folder_type, folder_lc)
     lc = pd.read_pickle(os.path.join(d_folder_lc, folder_lc+'.pkl'))
@@ -37,6 +37,7 @@ def periodograms_band(freq, d_folder_type, folder_lc, dict_per, without_points, 
     # print(f"Calculating periodograms of {name_lc}")
     # period of the light curve
     # period = valid_lightcurves[valid_lightcurves["source_id"] == name_lc]['pf'].values[0]
+    dict_per = {}
 
     # initialize list of time, mag and mag_err to multiband
     times, magnitudes, errors, bands = [], [], [], []
@@ -89,7 +90,7 @@ def periodograms_band(freq, d_folder_type, folder_lc, dict_per, without_points, 
 if __name__ == "__main__":
     
     # size of the batch
-    batch_size = 1600
+    batch_size = 3200
     print(f"setting batch size to {batch_size}")
     without_points = []
     lc_with_problems = []
@@ -97,35 +98,29 @@ if __name__ == "__main__":
     # valid_lightcurves = pd.read_csv(os.path.join("dataset", "valid_lightcurves.csv"))
 
     print("Initializing Ray")
-    ray.init(num_cpus=32)
+    ray.init(num_cpus=64)
     print("Ray initialized")
+    
+    # define range of frequencies to calculate the periodogram
+    print(f"calculating range of frequencies from 1e-3 to 25 with step 1e-4")
+    freq = np.arange(1e-3, 25, 1e-4)
+    # save the frequencies
+    np.savetxt(os.path.join("dataset", f"frequencies.txt"), freq)
+    print(f"Frequencies saved in dataset/frequencies.txt")
 
     # "eclipsing_binary", "rrlyrae"
     for folder in ["rrlyrae"]: 
         # define name of folder specific of the type light curve
         d_folder_type = os.path.join("dataset", folder)
-        print(f"Get values of the grid for {folder}")
-        # get values of the grid
-        grid = pd.read_csv(os.path.join("dataset", "grid.csv"))
-        min_freq = grid[grid["type"] == folder]["low-frequency"].values[0]
-        max_freq = grid[grid["type"] == folder]["high-frequency"].values[0]
-
-        # define range of frequencies to calculate the periodogram
-        print(f"calculating range of frequencies for {folder} from {min_freq} to {max_freq} with step 1e-4")
-        freq = np.arange(min_freq, 2*max_freq, 1e-4)
-        # save the frequencies
-        np.savetxt(os.path.join("dataset", f"frequencies_{folder}.txt"), freq)
-        print(f"Frequencies of {folder} saved in dataset/frequencies_{folder}.txt")
 
         print(f"calculating periodograms of {folder}")
         
         # batches for the directories
         directories = os.listdir(d_folder_type)
-        dict_per = {}
         for i in tqdm(range(0, len(directories), batch_size), desc=f"Calculating periodograms of {folder}"):
             batch = directories[i:i+batch_size]
             # calculate periodograms
-            results = ray.get([periodograms_band.remote(freq, d_folder_type, folder_lc, dict_per, without_points, lc_with_problems) for folder_lc in batch])
+            results = ray.get([periodograms_band.remote(freq, d_folder_type, folder_lc, without_points, lc_with_problems) for folder_lc in batch])
             profile = partial(timeit, globals=globals(), number=1)
             time_to_calculate = profile("ray.get([periodograms_band.remote(freq, d_folder_type, folder_lc, dict_per, without_points, lc_with_problems) for folder_lc in os.listdir(d_folder_type)])")
             

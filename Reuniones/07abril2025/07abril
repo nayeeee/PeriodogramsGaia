@@ -1,0 +1,9 @@
+- Preguntar al profe cristobal:
+    De donde saca la memoria la partición de cpu (actualmente pido 290 GB)
+    Puedo ocupar todos los cores de la cpu?
+    Preguntar si existe una partición de test o debug para probar el código
+- Lo de ir haciendolo de a batches esta perfecto y debería funcionar y corregir el error de memoria
+- Graficar los periodogramas que dan error de división por cero y compartirlos por ARGOS
+    El error podría ser porque todos los flujos son iguales y la desviación estándar es cero
+    O que existen puntos alejados de la media. 
+
