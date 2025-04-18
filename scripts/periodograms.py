@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import pickle
 import ray
+import warnings
 
 from tqdm import tqdm
 from functools import partial
@@ -28,7 +29,7 @@ def filter_flux_over_error(flux_over_error, time, mag):
     return np.array(err), np.array(time_filtered), np.array(mag_filtered)
 
 @ray.remote(num_cpus=64)
-def periodograms_band(freq, d_folder_type, folder_lc, without_points, lc_with_problems):
+def periodograms_band(freq, d_folder_type, folder_lc, without_points, lc_with_problems, lc_with_warnings):
     # path of the light curve
     d_folder_lc = os.path.join(d_folder_type, folder_lc)
     lc = pd.read_pickle(os.path.join(d_folder_lc, folder_lc+'.pkl'))
@@ -63,10 +64,21 @@ def periodograms_band(freq, d_folder_type, folder_lc, without_points, lc_with_pr
         err = 2.5/(np.log(10)*flux_over_error)
         # print(f"band: {band} lombscargle\n len time: {len(time)}, len mag: {len(mag)}, len err: {len(err)}")
         try:    
-            # calculate the periodogram
-            periodogram = LombScargle(time, mag, err).power(freq)
-            # save the periodogram
-            dict_per[band] = periodogram
+            with warnings.catch_warnings(record=True) as w:
+                # capture all warnings
+                warnings.simplefilter("always")
+                
+                # calculate the periodogram
+                periodogram = LombScargle(time, mag, err).power(freq)
+                # save the periodogram
+                dict_per[band] = periodogram
+                
+                if any(issubclass(warning.category, RuntimeWarning) for warning in w):
+                    # messages of the warnings
+                    messages = [warning.message for warning in w]
+                    lc_with_warnings.append((name_lc, band, messages))
+                    print(f"Warning in {name_lc} in {band}: {messages}")
+                    
         except Exception as e:
             print(f"Error in {name_lc} in {band}: {e}")
             lc_with_problems.append(name_lc)
@@ -81,7 +93,7 @@ def periodograms_band(freq, d_folder_type, folder_lc, without_points, lc_with_pr
     periodogram = LombScargle(times, magnitudes, errors, bands).power(freq)
     dict_per["multiband"] = periodogram
     # return the periodograms
-    return d_folder_lc, dict_per, without_points, lc_with_problems
+    return d_folder_lc, dict_per, without_points, lc_with_problems, lc_with_warnings
     
     
     
@@ -94,6 +106,7 @@ if __name__ == "__main__":
     print(f"setting batch size to {batch_size}")
     without_points = []
     lc_with_problems = []
+    lc_with_warnings = []
     # read the valid light curves
     # valid_lightcurves = pd.read_csv(os.path.join("dataset", "valid_lightcurves.csv"))
 
@@ -120,19 +133,19 @@ if __name__ == "__main__":
         for i in tqdm(range(0, len(directories), batch_size), desc=f"Calculating periodograms of {folder}"):
             batch = directories[i:i+batch_size]
             # calculate periodograms
-            results = ray.get([periodograms_band.remote(freq, d_folder_type, folder_lc, without_points, lc_with_problems) for folder_lc in batch])
+            results = ray.get([periodograms_band.remote(freq, d_folder_type, folder_lc, without_points, lc_with_problems, lc_with_warnings) for folder_lc in batch])
             profile = partial(timeit, globals=globals(), number=1)
-            time_to_calculate = profile("ray.get([periodograms_band.remote(freq, d_folder_type, folder_lc, dict_per, without_points, lc_with_problems) for folder_lc in os.listdir(d_folder_type)])")
+            time_to_calculate = profile("ray.get([periodograms_band.remote(freq, d_folder_type, folder_lc, without_points, lc_with_problems, lc_with_warnings) for folder_lc in batch])")
             
             print(f"Saving periodograms of {folder} from the batch {batch}")
             # save the periodograms with tqdm and message
             for result in tqdm(results, desc=f"Saving periodograms of {folder}"):
-                d_folder_lc, dict_per, without_points, lc_with_problems = result
+                d_folder_lc, dict_per, _without_points, _lc_with_problems, _lc_with_warnings = result
                 with open(os.path.join(d_folder_lc, f"periodograms.pkl"), "wb") as f:
                     pickle.dump(dict_per, f, protocol=pickle.HIGHEST_PROTOCOL)
                 
             # Append the new results to the CSV files
-            if without_points:
+            if _without_points:
                 df_without = pd.DataFrame(without_points, columns=["source_id"])
                 if not os.path.exists(os.path.join("dataset", f"without_points_{folder}.csv")):
                     df_without.to_csv(os.path.join("dataset", f"without_points_{folder}.csv"), index=False)
@@ -140,7 +153,7 @@ if __name__ == "__main__":
                     df_without.to_csv(os.path.join("dataset", f"without_points_{folder}.csv"), 
                                     mode='a', header=False, index=False)
 
-            if lc_with_problems:
+            if _lc_with_problems:
                 df_problems = pd.DataFrame(lc_with_problems, columns=["source_id"])
                 if not os.path.exists(os.path.join("dataset", f"lc_with_problems_{folder}.csv")):
                     df_problems.to_csv(os.path.join("dataset", f"lc_with_problems_{folder}.csv"), index=False)
@@ -148,4 +161,11 @@ if __name__ == "__main__":
                     df_problems.to_csv(os.path.join("dataset", f"lc_with_problems_{folder}.csv"), 
                                      mode='a', header=False, index=False)
 
+            if _lc_with_warnings:
+                df_warnings = pd.DataFrame(lc_with_warnings, columns=["source_id", "band", "warning"])
+                if not os.path.exists(os.path.join("dataset", f"lc_with_warnings_{folder}.csv")):
+                    df_warnings.to_csv(os.path.join("dataset", f"lc_with_warnings_{folder}.csv"), index=False)
+                else:
+                    df_warnings.to_csv(os.path.join("dataset", f"lc_with_warnings_{folder}.csv"), 
+                                     mode='a', header=False, index=False)
             print(f"Time to calculate periodograms of {folder}: {time_to_calculate} seconds")
