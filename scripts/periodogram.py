@@ -57,16 +57,16 @@ def calculate_single_periodogram(lc_path, freq_path=None):
         # Filter and calculate errors
         flux_over_error, time, mag = filter_flux_over_error(flux_over_error_, time_, mag_)
         err = 2.5/(np.log(10)*flux_over_error)
-        var_time = np.var(time)
-        var_mag = np.var(mag)
-        var_err = np.var(err)
+        # var_time = np.var(time)
+        # var_mag = np.var(mag)
+        # var_err = np.var(err)
         # print(f"for light curve {lc_path} and band {band}  -> var_time: {var_time}, var_mag: {var_mag}, var_err: {var_err}")
-        min_spacing = np.min(np.diff(np.sort(time)))
-        print(f"for light curve {lc_path} and band {band}  -> min_spacing: {min_spacing}")
+        # min_spacing = np.min(np.diff(np.sort(time)))
+        # print(f"for light curve {lc_path} and band {band}  -> min_spacing: {min_spacing}")
         try:
             # Calculate periodogram for this band
             periodogram = LombScargle(time, mag, err).power(freq)
-            dict_per[band] = periodogram
+            dict_per[band] = list(periodogram)
             
             # Store data for multiband analysis
             times.extend(time)
@@ -81,28 +81,29 @@ def calculate_single_periodogram(lc_path, freq_path=None):
     # Calculate multiband periodogram
     if times:  # Only if we have data
         periodogram = LombScargle(times, magnitudes, errors, bands).power(freq)
-        dict_per["multiband"] = periodogram
-        var_time = np.var(times)
-        var_mag = np.var(magnitudes)
-        var_err = np.var(errors)
+        dict_per["multiband"] = list(periodogram)
+        # var_time = np.var(times)
+        # var_mag = np.var(magnitudes)
+        # var_err = np.var(errors)
         # print(f"for light curve {lc_path} and band multiband  -> var_time: {var_time}, var_mag: {var_mag}, var_err: {var_err}")
-        min_spacing = np.min(np.diff(np.sort(times)))
-        print(f"for light curve {lc_path} and band multiband  -> min_spacing: {min_spacing}")
+        # min_spacing = np.min(np.diff(np.sort(times)))
+        # print(f"for light curve {lc_path} and band multiband  -> min_spacing: {min_spacing}")
     
     return dict_per
 
 if __name__ == "__main__":
     # Example usage
     lc_folder = "dataset"
-    for name_lc in ["4050275694921784704", "4103678042580890752", "6027794498969446400"]:
-        lc_path = os.path.join(lc_folder, f"rrlyrae/{name_lc}/{name_lc}.pkl")
+    for name_lc in ["2252805218287938560"]:
+        lc_path = os.path.join(lc_folder, f"eclipsing_binary/{name_lc}/{name_lc}.pkl")
         # Calculate periodograms
         periodograms = calculate_single_periodogram(lc_path)
-        
+        # create folder lc_with_warnings if it doesn't exist
+        os.makedirs("lc_with_warnings", exist_ok=True)
         # Save results
-        output_path = os.path.join(lc_folder, f"periodograms_{name_lc}.json")
+        output_path = os.path.join("lc_with_warnings", f"periodograms_{name_lc}.json")
         # save periodograms as json
         with open(output_path, "w") as f:
-            json.dump(periodograms, f)
+            json.dump(periodograms, f, indent=4)
     
     print(f"Periodograms saved to {output_path}")

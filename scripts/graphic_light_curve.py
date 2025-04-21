@@ -35,13 +35,11 @@ def main():
     if not os.path.exists("figures"):
         os.makedirs("figures")
 
-    # 4050275694921784704 4103678042580890752 6027794498969446400
-    # check 507222753405440
-    for name_lc in ["4050275694921784704", "4103678042580890752", "6027794498969446400"]:
+    for name_lc in ["2252805218287938560"]:
         print(f"Processing {name_lc}")
         # define the directory of the light curve
-        directory_lc = f"dataset/rrlyrae/{name_lc}/{name_lc}.pkl"
-        type_lc = "rrlyrae"
+        directory_lc = f"dataset/eclipsing_binary/{name_lc}/{name_lc}.pkl"
+        type_lc = "eclipsing_binary"
         # read file .pkl
         with open(directory_lc, "rb") as f:
             lc = pkl.load(f)

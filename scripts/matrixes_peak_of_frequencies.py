@@ -2,7 +2,9 @@ import os
 import pandas as pd
 import numpy as np
 import pickle as pkl
-
+import sys
+sys.path.append("..")
+from scripts.periodograms import sort_periodogram, top_frequencies, relative_error, matrix_band
 # size max-1 + max-2
 def generator_multiples(max):
     mult = np.concatenate([np.arange(1, max, 1), # multiples

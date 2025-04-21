@@ -89,15 +89,7 @@ def periodograms_band(freq, d_folder_type, folder_lc):
             # print(f"Error in {name_lc} in {band}: {e}")
             with_problems.append((name_lc, band))
             continue
-        # multiband
-        times += list(time)
-        magnitudes += list(mag)
-        errors += list(err)
-        bands += [band]*len(time)
-    # print(f"multiband lombscargle\n len times: {len(times)}, len magnitudes: {len(magnitudes)}, len errors: {len(errors)}, len bands: {len(bands)}")
-    # calculate the periodogram of the multiband
-    periodogram = LombScargle(times, magnitudes, errors, bands).power(freq)
-    dict_per["multiband"] = periodogram
+
     # return the periodograms
     return d_folder_lc, dict_per, without_points, with_problems, with_warnings
     
@@ -131,12 +123,8 @@ if __name__ == "__main__":
 
         print(f"calculating periodograms of {folder}")
         
-        # read txt file
-        with open("dataset/missing_periodograms_rrlyrae.txt", "r") as f:
-            missing_periodograms = f.readlines()
-            
-        # remove the \n
-        directories = [line.strip() for line in missing_periodograms]
+        # batches for the directories
+        directories = os.listdir(d_folder_type)
         for i in tqdm(range(0, len(directories), batch_size), desc=f"Calculating periodograms of {folder}"):
             batch = directories[i:i+batch_size]
             # calculate periodograms
@@ -151,8 +139,6 @@ if __name__ == "__main__":
             # save the periodograms with tqdm and message
             for result in tqdm(results, desc=f"Saving periodograms of {folder}"):
                 d_folder_lc, dict_per, without_points, with_problems, with_warnings = result
-                with open(os.path.join(d_folder_lc, f"periodograms.pkl"), "wb") as f:
-                    pickle.dump(dict_per, f, protocol=pickle.HIGHEST_PROTOCOL)
                 # save the results
                 lc_without_points.extend(without_points)
                 lc_with_problems.extend(with_problems)
@@ -165,9 +151,8 @@ if __name__ == "__main__":
                     else:
                         df = pd.DataFrame(logs[0], columns=["source_id", "band", "warning"])
                     
-                    if not os.path.exists(os.path.join("dataset", f"{logs[1]}_{folder}.csv")):
-                        df.to_csv(os.path.join("dataset", f"{logs[1]}_{folder}.csv"), index=False)
+                    if not os.path.exists(os.path.join("dataset", f"_{logs[1]}_{folder}.csv")):
+                        df.to_csv(os.path.join("dataset", f"_{logs[1]}_{folder}.csv"), index=False)
                     else:
-                        df.to_csv(os.path.join("dataset", f"{logs[1]}_{folder}.csv"), 
+                        df.to_csv(os.path.join("dataset", f"_{logs[1]}_{folder}.csv"), 
                                  mode='a', header=False, index=False)
-            # print(f"Time to calculate periodograms of {folder}: {time_to_calculate} seconds")
