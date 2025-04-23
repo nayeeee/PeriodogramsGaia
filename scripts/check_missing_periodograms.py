@@ -37,7 +37,7 @@ def find_missing_periodograms(base_dir="dataset", type_dir="rrlyrae"):
 
 if __name__ == "__main__":
     # Star type to verify
-    star_type = "rrlyrae"
+    star_type = "eclipsing_binary"
     print(f"\nSearching in {star_type}...")
     missing = find_missing_periodograms(type_dir=star_type)
         
