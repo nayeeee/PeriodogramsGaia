@@ -5,6 +5,10 @@ import argparse
 from astroquery.gaia import Gaia 
 from matplotlib import pyplot as plt
 import getpass
+import sys
+sys.path.append("..")
+
+# STEP 1: Get the data from Gaia
         
 # main function
 if __name__ == "__main__":
@@ -38,8 +42,8 @@ if __name__ == "__main__":
 # Number of lc with null frequency in vari_eclipsing_binary: 0
 # ----------------------------------------------
 # Saving results to: vari_rrlyrae.csv
-# Number of records in vari_rrlyrae: 177357
-# Number of lc with null pf in vari_rrlyrae: 94422
+# Number of records in vari_rrlyrae: 271779
+# Number of lc with null pf in vari_rrlyrae: 0
 
 
 
