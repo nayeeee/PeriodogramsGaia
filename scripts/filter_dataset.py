@@ -4,7 +4,7 @@
 # * where pf or frequency is not null 
 # * L points in each band 
 # * average magnitude in band G < M
-# * 
+# * flux_over_error > 0
 
 import pandas as pd
 import os
@@ -14,6 +14,12 @@ import math
 import sys
 sys.path.append("..")
 from astroquery.gaia import Gaia
+
+# STEP 2: Filter the dataset
+
+# function for discard the values of the flux_over_error that are not positive
+def filter_flux_over_error(flux_over_error):
+    return flux_over_error > 0
 
 def chunks(lst, n):
     """
@@ -27,25 +33,37 @@ def verification_lc(lc, path, type_star, L, M):
     mask_g = lc["variability_flag_g_reject"]=="false"
     mask_bp = lc["variability_flag_bp_reject"]=="false"
     mask_rp = lc["variability_flag_rp_reject"]=="false"
-    mask = mask_g | mask_bp | mask_rp
+    # mask = mask_g | mask_bp | mask_rp
 
     name = lc.source_id[0]
     
-    lc_1 = lc.loc[mask]
+    # lc_1 = lc.loc[mask]
+    lc_g = lc.loc[mask_g]
+    lc_bp = lc.loc[mask_bp]
+    lc_rp = lc.loc[mask_rp]
 
     common_columns = ['solution_id', 'source_id', 'transit_id', 'g_transit_time']
     columns_g  = ['g_transit_flux', 'g_transit_flux_error', 'g_transit_flux_over_error', 'g_transit_mag', 'variability_flag_g_reject', 'g_other_flags']
     columns_bp = ['bp_obs_time', 'bp_flux', 'bp_flux_error', 'bp_flux_over_error', 'bp_mag', 'variability_flag_bp_reject', 'bp_other_flags']
     columns_rp = ['rp_obs_time', 'rp_flux', 'rp_flux_error', 'rp_flux_over_error', 'rp_mag', 'variability_flag_rp_reject', 'rp_other_flags']
 
-    lc_1_g = lc_1[common_columns + columns_g]
-    lc_1_bp = lc_1[common_columns + columns_bp]
-    lc_1_rp = lc_1[common_columns + columns_rp]
+    lc_g = lc_g[common_columns + columns_g]
+    lc_bp = lc_bp[common_columns + columns_bp]
+    lc_rp = lc_rp[common_columns + columns_rp]
     
-    points_G = lc_1_g.shape[0]
-    points_BP = lc_1_bp.shape[0]
-    points_RP = lc_1_rp.shape[0]
-    mag_mean_G = np.mean(lc_1_g["g_transit_mag"])
+    # filter the flux_over_error that are not positive
+    mask_g_flux_over_error = filter_flux_over_error(lc_g["g_transit_flux_over_error"])
+    mask_bp_flux_over_error = filter_flux_over_error(lc_bp["bp_flux_over_error"])
+    mask_rp_flux_over_error = filter_flux_over_error(lc_rp["rp_flux_over_error"])
+    
+    lc_g = lc_g.loc[mask_g_flux_over_error]
+    lc_bp = lc_bp.loc[mask_bp_flux_over_error]
+    lc_rp = lc_rp.loc[mask_rp_flux_over_error]
+    
+    points_G = lc_g.shape[0]
+    points_BP = lc_bp.shape[0]
+    points_RP = lc_rp.shape[0]
+    mag_mean_G = np.mean(lc_g["g_transit_mag"])
 
     # Ver si cumple las condiciones de puntos en cada banda, mag promedio en la banda G y que no este repetido. Ademas que la mascara no sea vacia para alguna banda
     if ((points_BP >= L) & (points_G >= L) & (points_RP >= L) & (mag_mean_G < M)):
@@ -62,7 +80,7 @@ def verification_lc(lc, path, type_star, L, M):
     return False, name
 
 def create_folder_dataset():
-    parent_dir = "dataset"
+    parent_dir = "dataset10"
     if not os.path.exists(parent_dir):
         os.mkdir(parent_dir)
     directories = ["eclipsing_binary", "rrlyrae"]
@@ -75,7 +93,7 @@ def create_folder_dataset():
 
 def initialize_csv_files():
     # Create CSV for valid light curves
-    parent_dir = "dataset"
+    parent_dir = "dataset10"
     valid_csv = os.path.join(parent_dir, "valid_lightcurves.csv")
     if not os.path.exists(valid_csv):
         with open(valid_csv, 'w') as f:
@@ -104,14 +122,17 @@ if __name__ == "__main__":
     
     # reads csv files with the results of the query
     # ["vari_eclipsing_binary", "vari_rrlyrae"]
-    for table in ["vari_rrlyrae"]:
+    for table in ["vari_eclipsing_binary", "vari_rrlyrae"]:
         valid_lc = 0
         not_valid_lc = 0
         # load results
         print(f"Loading results in {table}.csv...")
-        path_results = os.path.join(f"dataset/{table}.csv")
-        results = pd.read_csv(path_results)
+        path_results = os.path.join(f"dataset10/{table}.csv")
+        results_all = pd.read_csv(path_results)
         print(f"Results loaded in {table}.csv")
+        
+        ## Extract 10 random light curves for debuging
+        results = results_all.sample(10)
         # extract source_id
         ids = results["source_id"].tolist()  
         
@@ -137,7 +158,7 @@ if __name__ == "__main__":
             # filter light curves
             for _, (key, value) in enumerate(datalink.items()):
                 lc = value[0].to_pandas()
-                is_valid, name = verification_lc(lc, "dataset", table[5:], L, M)
+                is_valid, name = verification_lc(lc, "dataset10", table[5:], L, M)
                 
                 # Get original light curve information
                 source_info = results[results['source_id'] == name].iloc[0]
@@ -172,7 +193,7 @@ if __name__ == "__main__":
             print(f"All light curves filtered from the chunk {i}")
             
         print(f"total light curves filtered in {table}: {valid_lc} / {len(ids)}")
-        print(f"{(len(ids)-valid_lc)*100/len(ids)}% of the light curves were deleted with filters:\n - L points in each band \n - average magnitude in band G < M")
+        print(f"{(len(ids)-valid_lc)*100/len(ids)}% of the light curves were deleted with filters:\n - L points in each band \n - average magnitude in band G < M \n - flux_over_error > 0")
 
 # OUTPUT:
 # Processing vari_rrlyrae chunks: 100%|████████████████████████████████████████████████████████████████████████████Processing vari_rrlyrae chunks: 100%|███████████████████████████████████████████████████████████████████████████████████████████| 37/37 [2:35:00<00:00, 251.37s/it]

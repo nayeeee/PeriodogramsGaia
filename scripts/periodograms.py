@@ -17,7 +17,7 @@ from functools import partial
 sys.path.append("..")
 
 cpus_per_task = 1  # CPUs per task
-total_cpus = 32    # Total CPUs available
+total_cpus = 2    # Total CPUs available
 
 # function for discard the values of the flux_over_error that are not positive
 def filter_flux_over_error(flux_over_error, time, mag):
@@ -25,14 +25,14 @@ def filter_flux_over_error(flux_over_error, time, mag):
     time_filtered = []
     mag_filtered = []
     for i, error in enumerate(flux_over_error):
-        if error > 0:
+        if error > 0 and not np.isnan(time[i]) and not np.isnan(mag[i]):
             err.append(error)
             time_filtered.append(time[i])
-            mag_filtered.append(mag[i])
+            mag_filtered.append(mag[i]) 
     return np.array(err), np.array(time_filtered), np.array(mag_filtered)
 
 @ray.remote(num_cpus=cpus_per_task)
-def periodograms_band(freq, d_folder_type, folder_lc):
+def periodograms_band(freq, d_folder_type, folder_lc, L, M):
     # path of the light curve
     d_folder_lc = os.path.join(d_folder_type, folder_lc)
     lc = pd.read_pickle(os.path.join(d_folder_lc, folder_lc+'.pkl'))
@@ -45,17 +45,19 @@ def periodograms_band(freq, d_folder_type, folder_lc):
 
     # initialize list of time, mag and mag_err to multiband
     times, magnitudes, errors, bands = [], [], [], []
-    without_points = []
+    # * L points in each band 
+    # * average magnitude in band G < M
+    filter_points_magnitude = [] 
     with_problems = []
     with_warnings = []
     # calculate the periodogram for each band and multiband
     for band in ["g", "bp", "rp"]:
         # get the mask of the light curve
-        mask = lc[f"variability_flag_{band}_reject"] == "false" # VERIFY THAT THIS FILTER IS CORRECT
+        mask = lc[f"variability_flag_{band}_reject"] == "false"
         
         if sum(mask) == 0:
             # print(f"No points for {name_lc} in {band}")
-            without_points.append((name_lc, band))
+            filter_points_magnitude.append((name_lc, band))
             continue
         
         # VERIFY THAT THE MASK CONTENT VALUES TRUE  
@@ -66,6 +68,12 @@ def periodograms_band(freq, d_folder_type, folder_lc):
             time_, mag_, flux_over_error_ = lc.loc[mask][[f"{band}_obs_time", f"{band}_mag", f"{band}_flux_over_error"]].values.T
 
         time, mag, flux_over_error = filter_flux_over_error(flux_over_error_, time_, mag_)
+        
+        # verify if the number of points is less than L and the average magnitude in band G < M
+        if len(time) < L and np.mean(mag) < M:
+            filter_points_magnitude.append((name_lc, band))
+            continue
+        
         # extract the error of the mag from this formula: 2.5/(np.log(10)*flux_over_error)
         err = 2.5/(np.log(10)*flux_over_error)
         # print(f"band: {band} lombscargle\n len time: {len(time)}, len mag: {len(mag)}, len err: {len(err)}")
@@ -106,7 +114,9 @@ def periodograms_band(freq, d_folder_type, folder_lc):
     
 
 if __name__ == "__main__":
-    
+    # parameters
+    L = 10
+    M = 18
     concurrent_tasks = total_cpus // cpus_per_task  # = 16 tasks simultaneously
     batch_size = concurrent_tasks * 2  # = 32 to have two rounds of tasks
     print(f"setting batch size to {batch_size}")
@@ -114,33 +124,29 @@ if __name__ == "__main__":
     # valid_lightcurves = pd.read_csv(os.path.join("dataset", "valid_lightcurves.csv"))
 
     print("Initializing Ray")
-    ray.init(num_cpus=32)
+    ray.init(num_cpus=total_cpus)
     print("Ray initialized")
     
     # define range of frequencies to calculate the periodogram
     print(f"calculating range of frequencies from 1e-3 to 25 with step 1e-4")
     freq = np.arange(1e-3, 25, 1e-4)
     # save the frequencies
-    np.savetxt(os.path.join("dataset", f"frequencies.txt"), freq)
-    print(f"Frequencies saved in dataset/frequencies.txt")
+    np.savetxt(os.path.join("dataset10", f"frequencies.txt"), freq)
+    print(f"Frequencies saved in dataset10/frequencies.txt")
 
     # "eclipsing_binary", "rrlyrae"
-    for folder in ["rrlyrae"]: 
+    for folder in ["eclipsing_binary", "rrlyrae"]: 
         # define name of folder specific of the type light curve
-        d_folder_type = os.path.join("dataset", folder)
+        d_folder_type = os.path.join("dataset10", folder)
 
         print(f"calculating periodograms of {folder}")
         
-        # read txt file
-        with open("dataset/missing_periodograms_rrlyrae.txt", "r") as f:
-            missing_periodograms = f.readlines()
-            
-        # remove the \n
-        directories = [line.strip() for line in missing_periodograms]
+        # directories in the folder
+        directories = [line for line in os.listdir(d_folder_type)]
         for i in tqdm(range(0, len(directories), batch_size), desc=f"Calculating periodograms of {folder}"):
             batch = directories[i:i+batch_size]
             # calculate periodograms
-            results = ray.get([periodograms_band.remote(freq, d_folder_type, folder_lc) for folder_lc in batch])
+            results = ray.get([periodograms_band.remote(freq, d_folder_type, folder_lc, L, M) for folder_lc in batch])
             profile = partial(timeit, globals=globals(), number=1)
             time_to_calculate = profile("ray.get([periodograms_band.remote(freq, d_folder_type, folder_lc) for folder_lc in batch])")
             
@@ -165,9 +171,9 @@ if __name__ == "__main__":
                     else:
                         df = pd.DataFrame(logs[0], columns=["source_id", "band", "warning"])
                     
-                    if not os.path.exists(os.path.join("dataset", f"{logs[1]}_{folder}.csv")):
-                        df.to_csv(os.path.join("dataset", f"{logs[1]}_{folder}.csv"), index=False)
+                    if not os.path.exists(os.path.join("dataset10", f"{logs[1]}_{folder}.csv")):
+                        df.to_csv(os.path.join("dataset10", f"{logs[1]}_{folder}.csv"), index=False)
                     else:
-                        df.to_csv(os.path.join("dataset", f"{logs[1]}_{folder}.csv"), 
+                        df.to_csv(os.path.join("dataset10", f"{logs[1]}_{folder}.csv"), 
                                  mode='a', header=False, index=False)
             # print(f"Time to calculate periodograms of {folder}: {time_to_calculate} seconds")

@@ -9,11 +9,15 @@ import sys
 sys.path.append("..")
 
 # STEP 1: Get the data from Gaia
+
+# verify that the folder "datasets" exists
+if not os.path.exists("dataset10"):
+        os.makedirs("dataset10")
         
 # main function
 if __name__ == "__main__":
         # [("vari_eclipsing_binary", "frequency", 2184477), ("vari_rrlyrae", "pf", 271779)]
-        for table, period_or_frequency, number_of_lc in [("vari_rrlyrae", "pf", 271779)]: 
+        for table, period_or_frequency, number_of_lc in [("vari_eclipsing_binary", "frequency", 2184477)]: 
                 user = input("Username Gaia: ")
                 password = getpass.getpass("Password Gaia: ")
                 
@@ -30,7 +34,7 @@ if __name__ == "__main__":
                                 FROM gaiadr3.{table}
                                 WHERE {period_or_frequency} IS NOT NULL OR "p1_o" IS NOT NULL
                                 """
-                job = Gaia.launch_job_async(query, output_file=f"{table}.csv", output_format="csv", dump_to_file=True, verbose=True)
+                job = Gaia.launch_job_async(query, output_file=f"dataset10/{table}.csv", output_format="csv", dump_to_file=True, verbose=True)
                 results = job.get_results()
                 print(f"Number of records in {table}:", len(results))
                 print(f"Number of lc with period null in {table}:", number_of_lc - len(results))
