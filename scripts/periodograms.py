@@ -15,20 +15,18 @@ from timeit import timeit
 from functools import partial
 
 sys.path.append("..")
-
+ 
 cpus_per_task = 1  # CPUs per task
 total_cpus = 2    # Total CPUs available
 
 # function for discard the values of the flux_over_error that are not positive
-def filter_flux_over_error(flux_over_error, time, mag):
-    err = []
-    time_filtered = []
-    mag_filtered = []
-    for i, error in enumerate(flux_over_error):
-        if error > 0 and not np.isnan(time[i]) and not np.isnan(mag[i]):
-            err.append(error)
-            time_filtered.append(time[i])
-            mag_filtered.append(mag[i]) 
+def filter_flux_over_error_and_nan(flux_over_error, time, mag):
+    # mask with the values of the flux_over_error that are positive and not nan
+    mask = (flux_over_error > 0) & (~np.isnan(time)) & (~np.isnan(mag))
+    # filter the values of the flux_over_error, time and mag
+    err = flux_over_error[mask]
+    time_filtered = time[mask]
+    mag_filtered = mag[mask]
     return np.array(err), np.array(time_filtered), np.array(mag_filtered)
 
 @ray.remote(num_cpus=cpus_per_task)
@@ -38,27 +36,17 @@ def periodograms_band(freq, d_folder_type, folder_lc, L, M):
     lc = pd.read_pickle(os.path.join(d_folder_lc, folder_lc+'.pkl'))
     # name of the light curve
     name_lc = lc.source_id.iloc[0]
-    # print(f"Calculating periodograms of {name_lc}")
-    # period of the light curve
-    # period = valid_lightcurves[valid_lightcurves["source_id"] == name_lc]['pf'].values[0]
     dict_per = {}
 
     # initialize list of time, mag and mag_err to multiband
     times, magnitudes, errors, bands = [], [], [], []
-    # * L points in each band 
-    # * average magnitude in band G < M
-    filter_points_magnitude = [] 
+
     with_problems = []
     with_warnings = []
     # calculate the periodogram for each band and multiband
     for band in ["g", "bp", "rp"]:
         # get the mask of the light curve
         mask = lc[f"variability_flag_{band}_reject"] == "false"
-        
-        if sum(mask) == 0:
-            # print(f"No points for {name_lc} in {band}")
-            filter_points_magnitude.append((name_lc, band))
-            continue
         
         # VERIFY THAT THE MASK CONTENT VALUES TRUE  
         # get the time, mag and mag_err of the light curve
@@ -67,12 +55,8 @@ def periodograms_band(freq, d_folder_type, folder_lc, L, M):
         else:
             time_, mag_, flux_over_error_ = lc.loc[mask][[f"{band}_obs_time", f"{band}_mag", f"{band}_flux_over_error"]].values.T
 
-        time, mag, flux_over_error = filter_flux_over_error(flux_over_error_, time_, mag_)
+        flux_over_error, time, mag = filter_flux_over_error_and_nan(flux_over_error_, time_, mag_)
         
-        # verify if the number of points is less than L and the average magnitude in band G < M
-        if len(time) < L and np.mean(mag) < M:
-            filter_points_magnitude.append((name_lc, band))
-            continue
         
         # extract the error of the mag from this formula: 2.5/(np.log(10)*flux_over_error)
         err = 2.5/(np.log(10)*flux_over_error)
@@ -104,10 +88,12 @@ def periodograms_band(freq, d_folder_type, folder_lc, L, M):
         bands += [band]*len(time)
     # print(f"multiband lombscargle\n len times: {len(times)}, len magnitudes: {len(magnitudes)}, len errors: {len(errors)}, len bands: {len(bands)}")
     # calculate the periodogram of the multiband
-    periodogram = LombScargle(times, magnitudes, errors, bands).power(freq)
-    dict_per["multiband"] = periodogram
+    # corregir método de LombScargleMultiband # CORREGIR
+    periodogram_multiband = LombScargleMultiband(t=times, y=magnitudes, bands=bands, dy=errors).power(freq)
+    dict_per["multiband"] = periodogram_multiband 
+    
     # return the periodograms
-    return d_folder_lc, dict_per, without_points, with_problems, with_warnings
+    return {'d_folder_lc': d_folder_lc, 'dict_per': dict_per, 'with_problems': with_problems, 'with_warnings': with_warnings}
     
     
     
@@ -132,7 +118,7 @@ if __name__ == "__main__":
     freq = np.arange(1e-3, 25, 1e-4)
     # save the frequencies
     np.savetxt(os.path.join("dataset10", f"frequencies.txt"), freq)
-    print(f"Frequencies saved in dataset10/frequencies.txt")
+    print(f"Frequencies saved in dataset/frequencies.txt")
 
     # "eclipsing_binary", "rrlyrae"
     for folder in ["eclipsing_binary", "rrlyrae"]: 
@@ -147,24 +133,23 @@ if __name__ == "__main__":
             batch = directories[i:i+batch_size]
             # calculate periodograms
             results = ray.get([periodograms_band.remote(freq, d_folder_type, folder_lc, L, M) for folder_lc in batch])
-            profile = partial(timeit, globals=globals(), number=1)
-            time_to_calculate = profile("ray.get([periodograms_band.remote(freq, d_folder_type, folder_lc) for folder_lc in batch])")
             
             print(f"Saving periodograms of {folder} from the batch {batch}")
-            lc_without_points = []
             lc_with_problems = []
             lc_with_warnings = []
             # save the periodograms with tqdm and message
-            for result in tqdm(results, desc=f"Saving periodograms of {folder}"):
-                d_folder_lc, dict_per, without_points, with_problems, with_warnings = result
-                with open(os.path.join(d_folder_lc, f"periodograms.pkl"), "wb") as f:
-                    pickle.dump(dict_per, f, protocol=pickle.HIGHEST_PROTOCOL)
+            for result in results:
                 # save the results
-                lc_without_points.extend(without_points)
-                lc_with_problems.extend(with_problems)
-                lc_with_warnings.extend(with_warnings)
+                lc_with_problems.extend(result['with_problems'])
+                lc_with_warnings.extend(result['with_warnings'])
+                # save the periodograms
+                # overwrite the file if it exists
+                if os.path.exists(os.path.join(result['d_folder_lc'], f"periodograms.pkl")):
+                    os.remove(os.path.join(result['d_folder_lc'], f"periodograms.pkl"))
+                with open(os.path.join(result['d_folder_lc'], f"periodograms.pkl"), "wb") as f:
+                    pickle.dump(result['dict_per'], f, protocol=pickle.HIGHEST_PROTOCOL) 
             # Append the new results to the CSV files
-            for logs in [(lc_without_points, "without_points"), (lc_with_problems, "with_problems"), (lc_with_warnings, "with_warnings")]:
+            for logs in [(lc_with_problems, "with_problems"), (lc_with_warnings, "with_warnings")]:
                 if logs[0]:
                     if logs[1] != "with_warnings":
                         df = pd.DataFrame(logs[0], columns=["source_id", "band"])
@@ -176,4 +161,11 @@ if __name__ == "__main__":
                     else:
                         df.to_csv(os.path.join("dataset10", f"{logs[1]}_{folder}.csv"), 
                                  mode='a', header=False, index=False)
-            # print(f"Time to calculate periodograms of {folder}: {time_to_calculate} seconds")
+                        
+# OUTPUT:
+# 
+# Calculating periodograms of rrlyrae: 100%|████████████████████████████████████████████████████████████████████████████████| 1913/1913 [20:42:35<00:00, 38.97s/it]
+# 
+# 
+# 
+# 

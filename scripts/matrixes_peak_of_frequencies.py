@@ -66,7 +66,7 @@ def matrix_all_bands(multiples, valid_lightcurves, lc_folder, folder_type, d_fol
         freq_ranking = top_frequencies(top, idx_highest, freq)
         matrix = matrix_band(freq_ranking, max_mult, top, period, tol, multiples)
         dict_matrix[band] = [freq_ranking, matrix]
-    return dict_matrix, directory_lc_folder, lc_folder
+    return {'dict_matrix': dict_matrix, 'directory_lc_folder': directory_lc_folder, 'lc_folder': lc_folder}
 # Matrixes of peak of frequencies v/s objetive period (with multiples and submultiples)
 
 if __name__ == "__main__":
@@ -116,7 +116,7 @@ if __name__ == "__main__":
         list_lc = [lc for lc in list_lc_without_filters if lc not in warnings_lc_source_id and lc not in without_points_source_id]
         print(f"Light curves after discarding: {len(list_lc)}")
         """
-        # without filters TEST
+        # without filters 
         list_lc = list_lc_without_filters
         print(f"calculating matrixes of peak of frequencies v/s objetive period (with multiples and submultiples) for {len(list_lc)} light curves")
         for i in tqdm(range(0, len(list_lc), batch_size), desc=f"Calculating matrixes for {folder_type}"):
@@ -127,6 +127,8 @@ if __name__ == "__main__":
             
             # save the results
             for result in results:
-                dict_matrix, directory_lc_folder, lc_folder = result
-                with open(os.path.join(directory_lc_folder, f"error_matrixes_{lc_folder}.pkl"), "wb") as handle:
-                    pkl.dump(dict_matrix, handle, protocol=pkl.HIGHEST_PROTOCOL)
+                # overwrite the file if it exists
+                if os.path.exists(os.path.join(result['directory_lc_folder'], f"error_matrixes_{result['lc_folder']}.pkl")):
+                    os.remove(os.path.join(result['directory_lc_folder'], f"error_matrixes_{result['lc_folder']}.pkl"))
+                with open(os.path.join(result['directory_lc_folder'], f"error_matrixes_{result['lc_folder']}.pkl"), "wb") as handle:
+                    pkl.dump(result['dict_matrix'], handle, protocol=pkl.HIGHEST_PROTOCOL)

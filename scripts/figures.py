@@ -7,15 +7,8 @@ import sys
 sys.path.append("..")
 
 def filter_flux_over_error(flux_over_error, time, mag):
-    err = []
-    time_filtered = []
-    mag_filtered = []
-    for i, error in enumerate(flux_over_error):
-        if not np.isnan(time[i]) and not np.isnan(mag[i]):
-            err.append(error)
-            time_filtered.append(time[i])
-            mag_filtered.append(mag[i])
-    return np.array(err), np.array(time_filtered), np.array(mag_filtered) 
+    mask = (flux_over_error > 0) & (~np.isnan(time)) & (~np.isnan(mag))
+    return flux_over_error[mask], time[mask], mag[mask]
 
 def plot_folded_light_curve(time_dict, mag_dict, error_dict, period, id_lc, type_lc):
     """
@@ -92,10 +85,6 @@ def plot_folded_light_curve(time_dict, mag_dict, error_dict, period, id_lc, type
     plt.savefig(filename, dpi=300, bbox_inches='tight')
     plt.close()
     print(f"Saved single-phase folded light curve to {filename}")
-    
-import matplotlib.pyplot as plt
-import numpy as np
-import os
 
 def plot_top_10_folded_light_curve(times, magnitudes, errors, top_per, band, id_lc, type_lc):
     """

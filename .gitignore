@@ -4,3 +4,5 @@
 /dataset10/results/matrixes 
 /results/matrixes/*
 /figures 
+/bad_dataset
+/bad_dataset/*
