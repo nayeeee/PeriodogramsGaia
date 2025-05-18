@@ -16,7 +16,7 @@ sys.path.append("..")
 """
 
 def list_matrixes(type_lc, list_lc):
-    directory = os.path.join('dataset10', type_lc)
+    directory = os.path.join('dataset', type_lc)
     dict_matrixes = {
         'g': [],
         'bp': [],
@@ -65,10 +65,10 @@ def write_matrix_cont(matrix, top, max_mult, type_lc, band, num_lc, output_file)
 if __name__ == "__main__":
     top = 10
     max_mult = 5
-    directory = "dataset10"
+    directory = "dataset"
     print("Creating results/matrixes folder")
     # verify if the 'results' exists
-    folder_results = 'dataset10/results'
+    folder_results = 'dataset/results'
     if not os.path.exists(folder_results):
         os.makedirs(folder_results)
             
@@ -76,10 +76,10 @@ if __name__ == "__main__":
     if not os.path.exists(folder_results_matrixes):
         os.makedirs(folder_results_matrixes)
         
-    print(f"Reading dataset10/valid_lightcurves.csv")
+    print(f"Reading dataset/valid_lightcurves.csv")
     # read valid light curves
     valid_lightcurves = pd.read_csv(os.path.join(directory, f"valid_lightcurves.csv"))
-    for type_lc in ['eclipsing_binary', 'rrlyrae']:
+    for type_lc in ['rrlyrae']:
         # Path to the output file
         output_file = os.path.join(folder_results_matrixes, f'output_{type_lc}.txt')
         
@@ -87,13 +87,13 @@ if __name__ == "__main__":
         if os.path.exists(output_file):
             os.remove(output_file)
         """
-        print(f"Reading dataset10/with_warnings_{type_lc}.csv")
-        # read the file dataset10/with_warnings_{type_lc}.csv
+        print(f"Reading dataset/with_warnings_{type_lc}.csv")
+        # read the file dataset/with_warnings_{type_lc}.csv
         warnings_lc = pd.read_csv(os.path.join(directory, f"with_warnings_{type_lc}.csv"))
         warnings_lc_source_id = warnings_lc['source_id'].astype(str).tolist()
         
-        print(f"Reading dataset10/without_points_{type_lc}.csv")
-        # read the file dataset10/without_points_{type_lc}.csv
+        print(f"Reading dataset/without_points_{type_lc}.csv")
+        # read the file dataset/without_points_{type_lc}.csv
         without_points = pd.read_csv(os.path.join(directory, f"without_points_{type_lc}.csv"))
         without_points_source_id = without_points['source_id'].astype(str).tolist()
         

@@ -14,6 +14,7 @@ import math
 import sys
 sys.path.append("..")
 from astroquery.gaia import Gaia
+import getpass
 
 # STEP 2: Filter the dataset
 
@@ -70,12 +71,14 @@ def verification_lc(lc, path, type_star, L, M):
         # create folder for each lc
         parent_dir = os.path.join(path, type_star)
         path_lc = os.path.join(parent_dir, str(name))
-        # remove the file if it exists
-        if os.path.exists(path_lc):
-            os.remove(path_lc)
-        os.mkdir(path_lc) 
-        path_lc = os.path.join(path_lc, str(name)+'.pkl')
-        lc.to_pickle(path_lc)
+        if not os.path.exists(path_lc):
+            os.mkdir(path_lc) 
+        path_lc = os.path.join(path_lc, str(name)+'.pkl') 
+        if type_star == "eclipsing_binary":
+            # remove the file if it exists
+            if os.path.exists(path_lc):
+                os.remove(path_lc)
+            lc.to_pickle(path_lc)
         
         return True, name   
     
@@ -96,13 +99,13 @@ def create_folder_dataset():
 def initialize_csv_files():
     # Create CSV for valid light curves
     parent_dir = "dataset"
-    valid_csv = os.path.join(parent_dir, "valid_lightcurves.csv")
+    valid_csv = os.path.join(parent_dir, "new_valid_lightcurves.csv")
     if not os.path.exists(valid_csv):
         with open(valid_csv, 'w') as f:
             f.write("source_id,pf,type\n")
     
     # Create CSV for invalid light curves
-    invalid_csv = os.path.join(parent_dir, "invalid_lightcurves.csv")
+    invalid_csv = os.path.join(parent_dir, "new_invalid_lightcurves.csv")
     if not os.path.exists(invalid_csv):
         with open(invalid_csv, 'w') as f:
             f.write("source_id,type\n")
@@ -122,9 +125,14 @@ if __name__ == "__main__":
     # Initialize CSV files
     valid_csv, invalid_csv = initialize_csv_files()
     
+    # login to Gaia
+    user = input("Username Gaia: ")
+    password = getpass.getpass("Password Gaia: ")
+    Gaia.login(user=user, password=password)
+    
     # reads csv files with the results of the query
     # ["vari_eclipsing_binary", "vari_rrlyrae"]
-    for table in ["vari_rrlyrae"]:
+    for table in ["vari_rrlyrae", "vari_eclipsing_binary"]: 
         valid_lc = 0
         not_valid_lc = 0
         # load results
@@ -232,6 +240,13 @@ if __name__ == "__main__":
 # Processing vari_rrlyrae chunks: 100%|██████████████████████████████████████████████████████████████████████████| 56/56 [1:30:10<00:00, 96.61s/it]
 # total light curves filtered in vari_rrlyrae: 114769 / 271779
 # 57.77120380897715% of the light curves were deleted with filters:9
+#  - L points in each band
+#  - average magnitude in band G < M
+#  - flux_over_error > 0
+# -------------------------------------------------------------------------
+# Processing vari_eclipsing_binary chunks: 100%|█████████████████████████████████████████████████████████████████████████████| 446/446 [12:50:13<00:00, 103.62s/it]
+# total light curves filtered in vari_eclipsing_binary: 919351 / 2184477
+# 57.91436577267694% of the light curves were deleted with filters:
 #  - L points in each band
 #  - average magnitude in band G < M
 #  - flux_over_error > 0

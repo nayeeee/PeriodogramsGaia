@@ -8,7 +8,7 @@ from tqdm import tqdm
 sys.path.append("..")
 
 cpus_per_task = 1  # CPUs per task
-total_cpus = 2    # Total CPUs available
+total_cpus = 62    # Total CPUs available
 
 # size max-1 + max-2
 def generator_multiples(max):
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     ray.init(num_cpus=total_cpus)
     print("Ray initialized")
     
-    directory = "dataset10"
+    directory = "dataset"
     max_mult = 5
     top = 10 
     tol = 1e-1
@@ -93,20 +93,20 @@ if __name__ == "__main__":
     # read valid light curves
     valid_lightcurves = pd.read_csv(os.path.join(directory, f"valid_lightcurves.csv"))
     
-    for folder_type in ["eclipsing_binary", "rrlyrae"]:
+    for folder_type in ["eclipsing_binary"]:
         print(f"Matrixes of peak of frequencies v/s objetive period (with multiples and submultiples) for {folder_type}")
         # directory of the type
         d_folder_type = os.path.join(directory, folder_type)
         # list of the light curves
         list_lc_without_filters = os.listdir(d_folder_type)
         """
-        print(f"Reading dataset10/with_warnings_{folder_type}.csv")
-        # read the file dataset10/with_warnings_{type_lc}.csv
+        print(f"Reading dataset/with_warnings_{folder_type}.csv")
+        # read the file dataset/with_warnings_{type_lc}.csv
         warnings_lc = pd.read_csv(os.path.join(directory, f"with_warnings_{folder_type}.csv"))
         warnings_lc_source_id = warnings_lc['source_id'].astype(str).tolist()
         
-        print(f"Reading dataset10/without_points_{folder_type}.csv")
-        # read the file dataset10/without_points_{type_lc}.csv
+        print(f"Reading dataset/without_points_{folder_type}.csv")
+        # read the file dataset/without_points_{type_lc}.csv
         without_points = pd.read_csv(os.path.join(directory, f"without_points_{folder_type}.csv"))
         without_points_source_id = without_points['source_id'].astype(str).tolist()
 

@@ -17,7 +17,7 @@ from functools import partial
 sys.path.append("..")
  
 cpus_per_task = 1  # CPUs per task
-total_cpus = 2    # Total CPUs available
+total_cpus = 62    # Total CPUs available
 
 # function for discard the values of the flux_over_error that are not positive
 def filter_flux_over_error_and_nan(flux_over_error, time, mag):
@@ -117,13 +117,13 @@ if __name__ == "__main__":
     print(f"calculating range of frequencies from 1e-3 to 25 with step 1e-4")
     freq = np.arange(1e-3, 25, 1e-4)
     # save the frequencies
-    np.savetxt(os.path.join("dataset10", f"frequencies.txt"), freq)
+    np.savetxt(os.path.join("dataset", f"frequencies.txt"), freq)
     print(f"Frequencies saved in dataset/frequencies.txt")
 
     # "eclipsing_binary", "rrlyrae"
-    for folder in ["eclipsing_binary", "rrlyrae"]: 
+    for folder in ["eclipsing_binary"]: 
         # define name of folder specific of the type light curve
-        d_folder_type = os.path.join("dataset10", folder)
+        d_folder_type = os.path.join("dataset", folder)
 
         print(f"calculating periodograms of {folder}")
         
@@ -134,8 +134,8 @@ if __name__ == "__main__":
             # calculate periodograms
             results = ray.get([periodograms_band.remote(freq, d_folder_type, folder_lc, L, M) for folder_lc in batch])
             
-            print(f"Saving periodograms of {folder} from the batch {batch}")
-            lc_with_problems = []
+            print(f"Saving periodograms of {folder}")
+            lc_with_problems = [] 
             lc_with_warnings = []
             # save the periodograms with tqdm and message
             for result in results:
@@ -156,16 +156,16 @@ if __name__ == "__main__":
                     else:
                         df = pd.DataFrame(logs[0], columns=["source_id", "band", "warning"])
                     
-                    if not os.path.exists(os.path.join("dataset10", f"{logs[1]}_{folder}.csv")):
-                        df.to_csv(os.path.join("dataset10", f"{logs[1]}_{folder}.csv"), index=False)
+                    if not os.path.exists(os.path.join("dataset", f"{logs[1]}_{folder}.csv")):
+                        df.to_csv(os.path.join("dataset", f"{logs[1]}_{folder}.csv"), index=False)
                     else:
-                        df.to_csv(os.path.join("dataset10", f"{logs[1]}_{folder}.csv"), 
+                        df.to_csv(os.path.join("dataset", f"{logs[1]}_{folder}.csv"), 
                                  mode='a', header=False, index=False)
                         
 # OUTPUT:
 # 
 # Calculating periodograms of rrlyrae: 100%|████████████████████████████████████████████████████████████████████████████████| 1913/1913 [20:42:35<00:00, 38.97s/it]
 # 
-# 
+# Calculating periodograms of eclipsing_binary: 100%|██████████████████████████████████████████████████████████████████████| 7415/7415 [100:50:38<00:00, 48.96s/it]
 # 
 # 
