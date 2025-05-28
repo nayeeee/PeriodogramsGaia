@@ -30,6 +30,8 @@ def relative_error(observed, actual):
 
 def matrix_band(frequencies_ranking, max, top, period, tol, multiples):
     matrix = [ [ [] for i in range(2 * max - 3) ] for j in range(top) ]
+    candidate_period = None
+    multiple_period = None
     # para que acepte solo un tol True
     error_tol_true = []
     for i in range(len(frequencies_ranking)):
@@ -39,24 +41,29 @@ def matrix_band(frequencies_ranking, max, top, period, tol, multiples):
                 if len(error_tol_true) == 0:
                     error_tol_true = [error, i, j]
                     tol_bool = True
+                    candidate_period = (1 / frequencies_ranking[i])
+                    multiple_period = multiples[j]
                 else:
                     if error_tol_true[0] >  error:
                         matrix[error_tol_true[1]][error_tol_true[2]] = [error_tol_true[0], False]
                         error_tol_true = [error, i, j]
                         tol_bool = True
+                        candidate_period = (1 / frequencies_ranking[i])
+                        multiple_period = multiples[j]
                     else:
                         tol_bool = False
                     
             else:
                 tol_bool = False
             matrix[i][j] = [error, tol_bool]
-    return matrix
+    return {'matrix': matrix, 'candidate_period': candidate_period, 'multiple_period': multiple_period}
 
 @ray.remote(num_cpus=cpus_per_task)
 def matrix_all_bands(multiples, valid_lightcurves, lc_folder, folder_type, d_folder_type, freq):
     dict_matrix = {}
     dict_matrix["multiples"] = multiples
     period = valid_lightcurves[(valid_lightcurves['source_id'] == int(lc_folder)) & (valid_lightcurves['type'] == folder_type)]['pf'].values[0]
+    dict_matrix['real_period'] = period
     directory_lc_folder = os.path.join(d_folder_type, lc_folder)
     directory_periodograms = os.path.join(directory_lc_folder, "periodograms.pkl")
     dict_periodograms = pd.read_pickle(directory_periodograms)
@@ -64,8 +71,8 @@ def matrix_all_bands(multiples, valid_lightcurves, lc_folder, folder_type, d_fol
         per = dict_periodograms[band]
         idx_highest = sort_periodogram(per)
         freq_ranking = top_frequencies(top, idx_highest, freq)
-        matrix = matrix_band(freq_ranking, max_mult, top, period, tol, multiples)
-        dict_matrix[band] = [freq_ranking, matrix]
+        matrix_dict = matrix_band(freq_ranking, max_mult, top, period, tol, multiples)
+        dict_matrix[band] = ([freq_ranking, matrix_dict['matrix']], (matrix_dict['candidate_period'], matrix_dict['multiple_period']))
     return {'dict_matrix': dict_matrix, 'directory_lc_folder': directory_lc_folder, 'lc_folder': lc_folder}
 # Matrixes of peak of frequencies v/s objetive period (with multiples and submultiples)
 

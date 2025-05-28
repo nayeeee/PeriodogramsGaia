@@ -3,6 +3,10 @@ import pandas as pd
 import sys
 from tqdm import tqdm
 import pickle
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import matplotlib.gridspec as gridspec
 
 sys.path.append("..")
 
@@ -35,11 +39,12 @@ def list_matrixes(type_lc, list_lc):
         matrixes = pd.read_pickle(d_lc_folder + '/error_matrixes_'+ lc_folder + '.pkl')
         for band in ['g', 'bp', 'rp', 'multiband']:
             dict_matrixes[band].append(matrixes[band][1])
-            dict_cont[band] += 1
+            dict_cont[band] += 1    
 
     return dict_cont, dict_matrixes
 
 def calculate_matrix_cont(top, max_mult, list_matrixes_band):
+    periods = []
     matrix_cont = [ [ [] for i in range(2*max_mult-3) ] for j in range(top) ]
     for i in tqdm(range(top), desc=f"Calculating matrix for top"):
         for j in tqdm(range(2*max_mult-3), desc=f"Calculating matrix for max_mult"):
@@ -47,7 +52,8 @@ def calculate_matrix_cont(top, max_mult, list_matrixes_band):
             for lc in tqdm(list_matrixes_band, desc=f"Calculating matrix for lc"):
                 if lc[i][j][1] == True:
                     matrix_cont[i][j] += 1
-    return matrix_cont
+                    periods.append(lc[i][j][0])
+    return matrix_cont, periods
 
 def write_matrix_cont(matrix, top, max_mult, type_lc, band, num_lc, output_file):
     with open(output_file, 'a') as f:  # 'a' to append to the file
@@ -61,6 +67,118 @@ def write_matrix_cont(matrix, top, max_mult, type_lc, band, num_lc, output_file)
                 cont_with_tol += matrix[i][j]
             f.write('\n')
         f.write('{:.2f}% of the light curves do not have tolerance True\n\n'.format((num_lc-cont_with_tol)*100/num_lc))
+        
+def plot_four_heatmaps(matrices, titles, cmaps=None, figsize=(18, 16)):
+    """
+    Function to create 4 heatmaps in 2x2 disposition
+    
+    Parameters:
+    -----------
+    matrices : list of 4 numpy arrays
+        The matrices to visualize, each must be of size 10x7
+    titles : list of 4 strings
+        Titles for each of the subplots
+    cmaps : list of 4 strings or None
+        Color maps for each graph. If None, uses a default set
+    figsize : tuple
+        Size of the figure (width, height)
+    
+    Retorna:
+    --------
+    fig : matplotlib.figure.Figure
+        The figure created
+    """
+    # Define common data
+    multiplos = [1, 2, 3, 4, 0.5, 0.33, 0.25]
+    top_freq = [f"Top {i}" for i in range(1, 11)]
+    
+    # Verify inputs
+    if len(matrices) != 4:
+        raise ValueError("Se deben proporcionar exactamente 4 matrices")
+    if len(titles) != 4:
+        raise ValueError("Se deben proporcionar exactamente 4 títulos")
+    
+    # Default color maps if not provided
+    if cmaps is None:
+        cmaps = ["YlGn", "YlOrRd", "Blues", "PuRd"]
+    elif len(cmaps) != 4:
+        raise ValueError("Se deben proporcionar exactamente 4 mapas de colores o None")
+    
+    # Create the figure with subplots
+    fig = plt.figure(figsize=figsize)
+    
+    # Use GridSpec to have more control over the disposition
+    gs = gridspec.GridSpec(2, 2, width_ratios=[1, 1], height_ratios=[1, 1])
+    
+    # Create each subplot
+    for i in range(4):
+        # Calculate the position in the 2x2 grid
+        row = i // 2
+        col = i % 2
+        
+        # Create the subplot
+        ax = plt.subplot(gs[row, col])
+        
+        # Create the heatmap
+        sns.heatmap(
+            matrices[i],
+            annot=True,
+            fmt=".2f",
+            cmap=cmaps[i],
+            linewidths=0.5,
+            ax=ax,
+            cbar_kws={'label': 'Counter of light curves where tolerance is True (%)'}
+        )
+        
+        # Configure the axis labels
+        ax.set_xticklabels([f"{m:.2f}" if m < 1 else f"{int(m)}" for m in multiplos])
+        ax.set_yticklabels(top_freq)
+        
+        # Configure the titles
+        ax.set_title(titles[i], fontsize=14)
+        ax.set_xlabel("Multiplier", fontsize=12)
+        ax.set_ylabel("Top frequencies of the periodogram", fontsize=12)
+    
+    # Adjust the disposition to avoid overlaps
+    plt.tight_layout()
+    
+    # Add a general title
+    fig.suptitle('Counter where the tolerance is True', 
+                fontsize=18, y=0.98)
+    plt.subplots_adjust(top=0.93)  # Adjust for the general title
+    
+    # Save the figure
+    plt.savefig(os.path.join(folder_results_matrixes, f"heatmap_{type_lc}.png"))
+    
+    return fig
+
+def histograma_basico(datos, folder_results_matrixes, titulo="Histograma", xlabel="Valores", ylabel="Frecuencia", bins=30):
+    """
+    Función básica para crear un histograma simple
+    
+    Parámetros:
+    -----------
+    datos : list o array
+        Los datos para el histograma
+    titulo : str
+        Título del gráfico
+    xlabel : str
+        Etiqueta del eje X
+    ylabel : str
+        Etiqueta del eje Y
+    bins : int
+        Número de bins (barras) para el histograma
+    """
+    plt.figure(figsize=(10, 6))
+    plt.hist(datos, bins=bins, alpha=0.7, color='skyblue', edgecolor='black')
+    plt.title(titulo, fontsize=16)
+    plt.xlabel(xlabel, fontsize=12)
+    plt.ylabel(ylabel, fontsize=12)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    # save the figure
+    plt.savefig(os.path.join(folder_results_matrixes, f"histogram_{type_lc}_{band}.png"))
+    return plt
 
 if __name__ == "__main__":
     top = 10
@@ -79,7 +197,7 @@ if __name__ == "__main__":
     print(f"Reading dataset/valid_lightcurves.csv")
     # read valid light curves
     valid_lightcurves = pd.read_csv(os.path.join(directory, f"valid_lightcurves.csv"))
-    for type_lc in ['rrlyrae']:
+    for type_lc in ['rrlyrae', 'eclipsing_binary']:
         # Path to the output file
         output_file = os.path.join(folder_results_matrixes, f'output_{type_lc}.txt')
         
@@ -107,6 +225,9 @@ if __name__ == "__main__":
         list_lc = os.listdir(os.path.join(directory, type_lc))
         print(f"Reading matrixes for {type_lc}")
         dict_cont, dict_matrixes = list_matrixes(type_lc, list_lc)
+        
+        matrixes = []
+        titles = []
 
         for band in ['g', 'bp', 'rp', 'multiband']:
             list_matrixes_band = dict_matrixes[band]
@@ -120,3 +241,9 @@ if __name__ == "__main__":
                 pickle.dump(matrix_cont, f)
             # write the matrix_cont
             write_matrix_cont(matrix_cont, top, max_mult, type_lc, band, cont_lc, output_file)
+            # pass the matrix_cont to percentage  
+            matrix_cont_percentage = np.array(matrix_cont)*100/cont_lc
+            matrixes.append(matrix_cont_percentage)
+            titles.append(f"Type:{type_lc} - Band:{band}")
+        plot_four_heatmaps(matrixes, titles, cmaps=None, figsize=(18, 16))
+            

@@ -20,11 +20,12 @@ frequency rank 10
 
 
 dict_matrix = {
+    'real_period': real_period
     'multiples': []
-    'BP': [freq_ranking, matrix]
-    'G': [freq_ranking, matrix]
-    'RP': [freq_ranking, matrix]
-    'multiband': [freq_ranking, matrix]
+    'g': ([freq_ranking, matrix], (candidate_period, multiple_period))
+    'bp': ([freq_ranking, matrix], (candidate_period, multiple_period))
+    'rp': ([freq_ranking, matrix], (candidate_period, multiple_period))
+    'multiband': ([freq_ranking, matrix], (candidate_period, multiple_period))
 }
 
 
