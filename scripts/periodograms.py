@@ -1,17 +1,15 @@
 # calculate the periodograms of the light curves
 import sys 
 import os
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pickle
 import ray
 import warnings
 
 from tqdm import tqdm
-from functools import partial
 from astropy.timeseries import LombScargle
 from astropy.timeseries import LombScargleMultiband
-from timeit import timeit
 from functools import partial
 
 sys.path.append("..")

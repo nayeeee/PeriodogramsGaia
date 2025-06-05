@@ -1,9 +1,6 @@
-import numpy as np
-import pandas as pd
+
 import os
-import argparse
 from astroquery.gaia import Gaia 
-from matplotlib import pyplot as plt
 import getpass
 import sys
 sys.path.append("..")
@@ -28,6 +25,7 @@ if __name__ == "__main__":
                                 FROM gaiadr3.{table}
                                 WHERE {period_or_frequency} IS NOT NULL  
                                 """
+                # vari_rrlyrae
                 else:
                         query = f"""
                                 SELECT * 

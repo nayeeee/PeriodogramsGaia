@@ -6,7 +6,7 @@ import sys
 from tqdm import tqdm
 sys.path.append('..')
 
-
+# bin = 100 o 1000
 def plot_histogram(data_dict, folder_type,
                       bins=30, alpha=0.7, figsize=(16, 12),
                       mostrar_estadisticas=True, mostrar_curva_normal=False):
@@ -42,25 +42,29 @@ def plot_histogram(data_dict, folder_type,
     titulos_bandas = ['G Band', 'BP Band', 'RP Band', 'Multiband']
     
     # Crear directorio de resultados si no existe
+    directory = "dataset"
     results_dir = "results"
+    directory_results = os.path.join(directory,results_dir)
     
     # Crear la figura con 4 subplots en disposición 2x2
     fig, axes = plt.subplots(2, 2, figsize=figsize)
     axes = axes.flatten()  # Aplanar para facilitar la iteración
     
     # Crear cada histograma
-    for i, (banda, color, titulo_banda) in enumerate(zip(bandas, colores, titulos_bandas)):
+    for i, (band, color, title_band) in enumerate(zip(bandas, colores, titulos_bandas)):
         ax = axes[i]
         
         # Verificar si la banda existe en el diccionario y tiene datos
-        if banda in data_dict and len(data_dict[banda]) > 0:
+        if band in data_dict and len(data_dict[band]) > 0:
             # Extraer candidate_period (posición 1) de las tuplas
-            datos = np.array([tupla[1] for tupla in data_dict[banda]])
+            datos = np.array([tupla[1] for tupla in data_dict[band]])
             
             # Crear el histograma
             n, bins_edges, patches = ax.hist(datos, bins=bins, alpha=alpha, 
                                            color=color, edgecolor='black', 
                                            density=mostrar_curva_normal)
+            ax.set_yscale('log')
+        
             
             # Si se solicita, superponer una curva normal
             if mostrar_curva_normal and len(datos) > 1:
@@ -93,13 +97,13 @@ def plot_histogram(data_dict, folder_type,
                    fontsize=14, style='italic', color='gray')
         
         # Configurar cada subplot
-        ax.set_title(titulo_banda, fontsize=14, pad=10)
+        ax.set_title(title_band, fontsize=14, pad=10)
         ax.set_xlabel('Period', fontsize=12)
         ax.set_ylabel('Number of Sources', fontsize=12)
         ax.grid(True, alpha=0.3)
     
     # Título global de la figura
-    fig.suptitle(f'Period Distribution Analysis - {type_lc}', 
+    fig.suptitle(f'Period Distribution Analysis - {folder_type}', 
                 fontsize=18, fontweight='bold', y=0.98)
     
     # Ajustar el layout
@@ -107,8 +111,8 @@ def plot_histogram(data_dict, folder_type,
     plt.subplots_adjust(top=0.93)  # Dejar espacio para el título global
     
     # Guardar la figura
-    filename = f'histogram_{folder_type}_{band}.png'
-    filepath = os.path.join(results_dir, filename)
+    filename = f'histogram_{folder_type}.png'
+    filepath = os.path.join(directory_results, filename)
     plt.savefig(filepath, dpi=300, bbox_inches='tight')
     plt.close()
     
@@ -117,7 +121,8 @@ def plot_histogram(data_dict, folder_type,
 if __name__ == "__main__":
     directory = "dataset"
     results_dir = "results"
-    for folder_type in ["rrlyrae"]:
+    directory_results = os.path.join(directory,results_dir)
+    for folder_type in ["eclipsing_binary"]:
         # directory of the type
         d_folder_type = os.path.join(directory, folder_type)
         # list of the periods 
@@ -126,7 +131,7 @@ if __name__ == "__main__":
         # 'rp': [(real_period, candidate_period), ...], 
         # 'multiband': [(real_period, candidate_period), ...]}
         # read the periods
-        with open(os.path.join(results_dir, f'periods_{folder_type}.pkl'), 'rb') as f:
+        with open(os.path.join(directory_results, f'periods_{folder_type}.pkl'), 'rb') as f:
             dict_periods = pickle.load(f)
         # plot the histogram
         plot_histogram(dict_periods, folder_type)

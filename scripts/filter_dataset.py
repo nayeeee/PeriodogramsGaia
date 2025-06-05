@@ -6,11 +6,9 @@
 # * average magnitude in band G < M
 # * flux_over_error > 0
 
-import pandas as pd
 import os
 from tqdm import tqdm
 import numpy as np
-import math
 import sys
 sys.path.append("..")
 from astroquery.gaia import Gaia
@@ -204,37 +202,6 @@ if __name__ == "__main__":
         print(f"{(len(ids)-valid_lc)*100/len(ids)}% of the light curves were deleted with filters:\n - L points in each band \n - average magnitude in band G < M \n - flux_over_error > 0")
 
 # OUTPUT:
-# Processing vari_rrlyrae chunks: 100%|████████████████████████████████████████████████████████████████████████████Processing vari_rrlyrae chunks: 100%|███████████████████████████████████████████████████████████████████████████████████████████| 37/37 [2:35:00<00:00, 251.37s/it]
-# total light curves filtered in vari_rrlyrae: 81515 / 177357
-# 54.03902862587888% of the light curves were deleted with filters:
-#  - L points in each band
-#  - average magnitude in band G < M
-# -------------------------------------------
-# All light curves filtered from the chunk 445
-# total light curves filtered in vari_eclipsing_binary: 945705 / 2184477
-# 56.70794428140008% of the light curves were deleted with filters:
-#  - L points in each band
-#  - average magnitude in band G < M
-# Processing vari_eclipsing_binary chunks: 100%|██████████| 446/446 [11:48:19<00:00, 95.29s/it]
-
-# OFICIAL OUTPUT:
-# Processing vari_rrlyrae chunks: 100%|██████████| 56/56 [1:27:33<00:00, 93.82s/it]
-# All light curves filtered from the chunk 55
-# total light curves filtered in vari_rrlyrae: 117292 / 271779
-# 56.84287601323134% of the light curves were deleted with filters:
-#  - L points in each band
-#  - average magnitude in band G < M
-# -------------------------------------------
-# All light curves filtered from the chunk 445
-# total light curves filtered in vari_eclipsing_binary: 945705 / 2184477
-# 56.70794428140008% of the light curves were deleted with filters:
-#  - L points in each band
-#  - average magnitude in band G < M
-# Processing vari_eclipsing_binary chunks: 100%|██████████| 446/446 [12:10:51<00:00, 98.32s/it]
-
-
-
-
 
 # All light curves filtered from the chunk 55
 # Processing vari_rrlyrae chunks: 100%|██████████████████████████████████████████████████████████████████████████| 56/56 [1:30:10<00:00, 96.61s/it]

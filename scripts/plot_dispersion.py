@@ -59,11 +59,11 @@ def plot_dispersion_bands(data_dict, folder_type,
             # Calculate the limits for the x=y line
             if len(x) > 0 and len(y) > 0:
                 min_val = min(min(x), min(y))
-                print(f"min_val x: {min(x)}")
-                print(f"min_val y: {min(y)}")
+                # print(f"min_val x: {min(x)}")
+                # print(f"min_val y: {min(y)}")
                 max_val = max(max(x), max(y))
-                print(f"max_val x: {max(x)}")
-                print(f"max_val y: {max(y)}")
+                # print(f"max_val x: {max(x)}")
+                # print(f"max_val y: {max(y)}")
                 
                 # Add the dashed x=y line
                 ax.plot([min_val, max_val], [min_val, max_val], 
@@ -92,8 +92,9 @@ def plot_dispersion_bands(data_dict, folder_type,
         ax.grid(True, alpha=0.3)
         
         # Make the axes have the same scale for better visualization of x=y
-        if banda in data_dict and len(data_dict[banda]) > 0:
-            ax.set_aspect('equal', adjustable='box')
+        # if banda in data_dict and len(data_dict[banda]) > 0:
+            # ax.set_aspect('equal', adjustable='box')
+        ax.set_xlim([0, 1.5])
     
     # Global title of the figure
     fig.suptitle(f'Period Recovery Analysis - {folder_type}', 

@@ -152,34 +152,6 @@ def plot_four_heatmaps(matrices, titles, cmaps=None, figsize=(18, 16)):
     
     return fig
 
-def histograma_basico(datos, folder_results_matrixes, titulo="Histograma", xlabel="Valores", ylabel="Frecuencia", bins=30):
-    """
-    Función básica para crear un histograma simple
-    
-    Parámetros:
-    -----------
-    datos : list o array
-        Los datos para el histograma
-    titulo : str
-        Título del gráfico
-    xlabel : str
-        Etiqueta del eje X
-    ylabel : str
-        Etiqueta del eje Y
-    bins : int
-        Número de bins (barras) para el histograma
-    """
-    plt.figure(figsize=(10, 6))
-    plt.hist(datos, bins=bins, alpha=0.7, color='skyblue', edgecolor='black')
-    plt.title(titulo, fontsize=16)
-    plt.xlabel(xlabel, fontsize=12)
-    plt.ylabel(ylabel, fontsize=12)
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    # save the figure
-    plt.savefig(os.path.join(folder_results_matrixes, f"histogram_{type_lc}_{band}.png"))
-    return plt
-
 if __name__ == "__main__":
     top = 10
     max_mult = 5
