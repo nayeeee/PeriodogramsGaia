@@ -3,24 +3,21 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
+import pandas as pd
 from tqdm import tqdm
 sys.path.append('..')
 
 # bin = 100 o 1000
-def plot_histogram(data_dict, folder_type,
-                      bins=30, alpha=0.7, figsize=(16, 12),
+def plot_histogram(df, folder_type,
+                      bins=100, alpha=0.7, figsize=(16, 12),
                       mostrar_estadisticas=True, mostrar_curva_normal=False):
     """
     Función para crear 4 histogramas (2x2) desde un diccionario de bandas
     
     Parámetros:
     -----------
-    data_dict : dict
-        Diccionario con la estructura:
-        {'g': [(real_period, candidate_period), ...],
-         'bp': [(real_period, candidate_period), ...],
-         'rp': [(real_period, candidate_period), ...],
-         'multiband': [(real_period, candidate_period), ...]}
+    df : pd.DataFrame
+        DataFrame con las columnas: id, real_frequency, best_frequency_g, best_frequency_bp, best_frequency_rp, best_frequency_multiband
     type_lc : str
         Tipo de curva de luz para el título global
     folder_type : str
@@ -55,50 +52,43 @@ def plot_histogram(data_dict, folder_type,
         ax = axes[i]
         
         # Verificar si la banda existe en el diccionario y tiene datos
-        if band in data_dict and len(data_dict[band]) > 0:
-            # Extraer candidate_period (posición 1) de las tuplas
-            datos = np.array([tupla[1] for tupla in data_dict[band]])
+        datos = df[f'best_frequency_{band}'].values
             
-            # Crear el histograma
-            n, bins_edges, patches = ax.hist(datos, bins=bins, alpha=alpha, 
+        # Crear el histograma
+        n, bins_edges, patches = ax.hist(datos, bins=bins, alpha=alpha, 
                                            color=color, edgecolor='black', 
                                            density=mostrar_curva_normal)
-            ax.set_yscale('log')
+        ax.set_yscale('log')
         
             
-            # Si se solicita, superponer una curva normal
-            if mostrar_curva_normal and len(datos) > 1:
-                media = np.mean(datos)
-                std = np.std(datos)
-                if std > 0:  # Evitar división por cero
-                    x = np.linspace(datos.min(), datos.max(), 100)
-                    curva_normal = (1/(std * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - media) / std) ** 2)
-                    ax.plot(x, curva_normal, 'r-', linewidth=2, label='Normal Teórica')
-                    ax.legend()
+        # Si se solicita, superponer una curva normal
+        if mostrar_curva_normal and len(datos) > 1:
+            media = np.mean(datos)
+            std = np.std(datos)
+            if std > 0:  # Evitar división por cero
+                x = np.linspace(datos.min(), datos.max(), 100)
+                curva_normal = (1/(std * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - media) / std) ** 2)
+                ax.plot(x, curva_normal, 'r-', linewidth=2, label='Normal Teórica')
+                ax.legend()
             
-            # Añadir estadísticas al gráfico si se solicita
-            if mostrar_estadisticas and len(datos) > 0:
-                media = np.mean(datos)
-                mediana = np.median(datos)
-                std = np.std(datos)
-                n_datos = len(datos)
+        # Añadir estadísticas al gráfico si se solicita
+        if mostrar_estadisticas and len(datos) > 0:
+            media = np.mean(datos)
+            mediana = np.median(datos)
+            std = np.std(datos)
+            n_datos = len(datos)
                 
-                # Crear texto con estadísticas
-                stats_text = f'Media: {media:.3f}\nMediana: {mediana:.3f}\nDesv. Est.: {std:.3f}\nN: {n_datos}'
+            # Crear texto con estadísticas
+            stats_text = f'Media: {media:.3f}\nMediana: {mediana:.3f}\nDesv. Est.: {std:.3f}\nN: {n_datos}'
                 
-                # Posicionar el texto en la esquina superior derecha
-                ax.text(0.75, 0.75, stats_text, transform=ax.transAxes, 
-                       bbox=dict(boxstyle='round', facecolor='white', alpha=0.8),
-                       verticalalignment='top', fontsize=10)
-        else:
-            # Si no hay datos para esta banda, mostrar mensaje
-            ax.text(0.5, 0.5, 'No data available', 
-                   transform=ax.transAxes, ha='center', va='center',
-                   fontsize=14, style='italic', color='gray')
+            # Posicionar el texto en la esquina superior derecha
+            ax.text(0.75, 0.75, stats_text, transform=ax.transAxes, 
+                    bbox=dict(boxstyle='round', facecolor='white', alpha=0.8),
+                    verticalalignment='top', fontsize=10)
         
         # Configurar cada subplot
         ax.set_title(title_band, fontsize=14, pad=10)
-        ax.set_xlabel('Period', fontsize=12)
+        ax.set_xlabel('periodogram peak frequency', fontsize=12)
         ax.set_ylabel('Number of Sources', fontsize=12)
         ax.grid(True, alpha=0.3)
     
@@ -122,17 +112,11 @@ if __name__ == "__main__":
     directory = "dataset"
     results_dir = "results"
     directory_results = os.path.join(directory,results_dir)
-    for folder_type in ["eclipsing_binary"]:
+    for folder_type in ["rrlyrae"]:
         # directory of the type
         d_folder_type = os.path.join(directory, folder_type)
-        # list of the periods 
-        # {'g': [(real_period, candidate_period), ...], 
-        # 'bp': [(real_period, candidate_period), ...], 
-        # 'rp': [(real_period, candidate_period), ...], 
-        # 'multiband': [(real_period, candidate_period), ...]}
-        # read the periods
-        with open(os.path.join(directory_results, f'periods_{folder_type}.pkl'), 'rb') as f:
-            dict_periods = pickle.load(f)
+        # read the frequencies
+        df = pd.read_csv(f'dataset/frequencies_data_{folder_type}.csv')
         # plot the histogram
-        plot_histogram(dict_periods, folder_type)
+        plot_histogram(df, folder_type)
         
